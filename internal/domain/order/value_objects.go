@@ -18,6 +18,15 @@ func NewCustomerID(id string) (CustomerID, error) {
 	return CustomerID(id), nil
 }
 
+type ItemID string
+
+func NewItemID(id string) (ItemID, error) {
+	if id == "" {
+		return "", ErrEmptyID
+	}
+	return ItemID(id), nil
+}
+
 type Price float64
 
 func NewPrice(amount float64) (Price, error) {
