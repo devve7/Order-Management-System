@@ -8,6 +8,10 @@ type OrderItem struct {
 	price Price
 }
 
+func (i *OrderItem) GetID() ItemID {
+	return i.id
+}
+
 type OrderItemFactory struct {
 	nextID ItemID
 	prices map[string]Price
