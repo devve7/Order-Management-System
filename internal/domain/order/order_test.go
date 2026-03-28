@@ -296,3 +296,40 @@ func TestShip(t *testing.T) {
 		})
 	}
 }
+
+func TestCancel(t *testing.T) {
+	orderID, _ := NewOrderID("orderID")
+	CustomerID, _ := NewCustomerID("customerID")
+	tests := []struct {
+		name        string
+		setup       func() *Order
+		expectedErr error
+	}{
+		{
+			name: "ok",
+			setup: func() *Order {
+				order := NewOrder(orderID, CustomerID)
+				order.status = StatusCreated
+				return order
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "cancel shipped order",
+			setup: func() *Order {
+				order := NewOrder(orderID, CustomerID)
+				order.status = StatusShipped
+				return order
+			},
+			expectedErr: ErrCannotCancel,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			order := tt.setup()
+			err := order.Cancel()
+			errCompare(t, err, tt.expectedErr)
+		})
+	}
+}
