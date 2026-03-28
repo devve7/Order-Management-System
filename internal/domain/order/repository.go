@@ -7,5 +7,5 @@ type Repository interface {
 
 	Update(order *Order) error
 
-	NextID() (ItemID, error)
+	NextID() (OrderID, error)
 }
