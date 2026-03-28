@@ -333,3 +333,45 @@ func TestCancel(t *testing.T) {
 		})
 	}
 }
+
+func TestTotal(t *testing.T) {
+	orderID, _ := NewOrderID("orderID")
+	CustomerID, _ := NewCustomerID("customerID")
+	tests := []struct {
+		name     string
+		setup    func() *Order
+		expected Price
+	}{
+		{
+			name: "ok",
+			setup: func() *Order {
+				order := NewOrder(orderID, CustomerID)
+				item := &OrderItem{
+					id:    2,
+					name:  "item",
+					price: 100,
+				}
+				order.AddItem(item)
+				return order
+			},
+			expected: 100,
+		},
+		{
+			name: "ok",
+			setup: func() *Order {
+				order := NewOrder(orderID, CustomerID)
+				return order
+			},
+			expected: 0,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			order := tt.setup()
+			price := order.Total()
+			if price != tt.expected {
+				t.Errorf("expected (%v), got (%v)", tt.expected, price)
+			}
+		})
+	}
+}
