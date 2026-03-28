@@ -97,8 +97,22 @@ func (o *Order) Total() Price {
 	return price
 }
 
-/*func (o *Order) ID() OrderID
-func (o *Order) CustomerID() CustomerID
-func (o *Order) Status() OrderStatus
-func (o *Order) Items() []*OrderItem
-func (o *Order) CreatedAt() time.Time*/
+func (o *Order) ID() OrderID {
+	return o.id
+}
+
+func (o *Order) CustomerID() CustomerID {
+	return o.customerID
+}
+
+func (o *Order) Status() OrderStatus {
+	return o.status
+}
+
+func (o *Order) Items() []*OrderItem {
+	return o.items
+}
+
+func (o *Order) CreatedAt() time.Time {
+	return o.createdAt
+}
