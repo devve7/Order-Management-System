@@ -8,25 +8,30 @@ import (
 func TestOrderID(t *testing.T) {
 	tests := []struct {
 		name string
-		id   string
+		id   int64
 		err  error
 	}{
 		{
 			name: "ok",
-			id:   "1234",
+			id:   10,
 			err:  nil,
 		},
 		{
-			name: "empty id",
-			id:   "",
-			err:  ErrEmptyID,
+			name: "negative",
+			id:   -10,
+			err:  ErrInvalidID,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			orderID, err := NewOrderID(tt.id)
-			if !errors.Is(err, tt.err) || tt.id != string(orderID) {
-				t.Errorf("Incorrect OrderID, expected (%v, %v), got (%v, %v)", tt.err, tt.id, err, string(orderID))
+			if !errors.Is(err, tt.err) {
+				t.Errorf("expected (%v), got (%v)", tt.err, err)
+			}
+			if tt.err == nil {
+				if orderID != OrderID(tt.id) {
+					t.Errorf("expected (%v), got (%v)", tt.id, orderID)
+				}
 			}
 		})
 	}
@@ -35,25 +40,62 @@ func TestOrderID(t *testing.T) {
 func TestCustomerID(t *testing.T) {
 	tests := []struct {
 		name string
-		id   string
+		id   int64
 		err  error
 	}{
 		{
 			name: "ok",
-			id:   "1234",
+			id:   10,
 			err:  nil,
 		},
 		{
-			name: "empty id",
-			id:   "",
-			err:  ErrEmptyID,
+			name: "negative",
+			id:   -10,
+			err:  ErrInvalidID,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			customerID, err := NewCustomerID(tt.id)
-			if !errors.Is(err, tt.err) || tt.id != string(customerID) {
-				t.Errorf("Incorrect CustomerID, expected (%v, %v), got (%v, %v)", tt.err, tt.id, err, string(customerID))
+			if !errors.Is(err, tt.err) {
+				t.Errorf("expected (%v), got (%v)", tt.err, err)
+			}
+			if tt.err == nil {
+				if customerID != CustomerID(tt.id) {
+					t.Errorf("expected (%v), got (%v)", tt.id, customerID)
+				}
+			}
+		})
+	}
+}
+
+func TestItemID(t *testing.T) {
+	tests := []struct {
+		name string
+		id   int64
+		err  error
+	}{
+		{
+			name: "ok",
+			id:   10,
+			err:  nil,
+		},
+		{
+			name: "negative",
+			id:   -10,
+			err:  ErrInvalidID,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			itemID, err := NewItemID(tt.id)
+			if !errors.Is(err, tt.err) {
+				t.Errorf("expected (%v), got (%v)", tt.err, err)
+			}
+			if tt.err == nil {
+				if itemID != ItemID(tt.id) {
+					t.Errorf("expected (%v), got (%v)", tt.id, itemID)
+				}
 			}
 		})
 	}

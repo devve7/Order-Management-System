@@ -1,27 +1,30 @@
 package order
 
-type OrderID string
+type OrderID int64
 
-func NewOrderID(id string) (OrderID, error) {
-	if id == "" {
-		return "", ErrEmptyID
+func NewOrderID(id int64) (OrderID, error) {
+	if id < 0 {
+		return OrderID(0), ErrInvalidID
 	}
 	return OrderID(id), nil
 }
 
-type CustomerID string
+type CustomerID int64
 
-func NewCustomerID(id string) (CustomerID, error) {
-	if id == "" {
-		return "", ErrEmptyID
+func NewCustomerID(id int64) (CustomerID, error) {
+	if id < 0 {
+		return CustomerID(0), ErrInvalidID
 	}
 	return CustomerID(id), nil
 }
 
-type ItemID uint64
+type ItemID int64
 
-func NewItemID(id uint64) ItemID {
-	return ItemID(id)
+func NewItemID(id int64) (ItemID, error) {
+	if id < 0 {
+		return ItemID(0), ErrInvalidID
+	}
+	return ItemID(id), nil
 }
 
 type Price float64

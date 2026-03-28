@@ -12,9 +12,12 @@ func errCompare(t *testing.T, err error, expectedErr error) {
 	}
 }
 
+var (
+	orderID OrderID = 10
+	customerID CustomerID = 10
+)
+
 func TestAddItem(t *testing.T) {
-	orderID, _ := NewOrderID("orderID")
-	CustomerID, _ := NewCustomerID("customerID")
 	tests := []struct {
 		name        string
 		item        *OrderItem
@@ -29,7 +32,7 @@ func TestAddItem(t *testing.T) {
 				price: 100,
 			},
 			setup: func() *Order {
-				order := NewOrder(orderID, CustomerID)
+				order := NewOrder(orderID, customerID)
 				return order
 			},
 			expectedErr: nil,
@@ -38,7 +41,7 @@ func TestAddItem(t *testing.T) {
 			name: "add nil item",
 			item: nil,
 			setup: func() *Order {
-				order := NewOrder(orderID, CustomerID)
+				order := NewOrder(orderID, customerID)
 				return order
 			},
 			expectedErr: ErrOrderItemNotFound,
@@ -51,7 +54,7 @@ func TestAddItem(t *testing.T) {
 				price: 100,
 			},
 			setup: func() *Order {
-				order := NewOrder(orderID, CustomerID)
+				order := NewOrder(orderID, customerID)
 				order.status = StatusCancelled
 				return order
 			},
@@ -65,7 +68,7 @@ func TestAddItem(t *testing.T) {
 				price: 100,
 			},
 			setup: func() *Order {
-				order := NewOrder(orderID, CustomerID)
+				order := NewOrder(orderID, customerID)
 				order.status = StatusShipped
 				return order
 			},
@@ -88,8 +91,6 @@ func TestAddItem(t *testing.T) {
 }
 
 func TestRemoveItem(t *testing.T) {
-	orderID, _ := NewOrderID("orderID")
-	CustomerID, _ := NewCustomerID("customerID")
 	item := &OrderItem{
 		id:    1,
 		name:  "hello",
@@ -104,7 +105,7 @@ func TestRemoveItem(t *testing.T) {
 		{
 			name: "delete first time",
 			setup: func() *Order {
-				order := NewOrder(orderID, CustomerID)
+				order := NewOrder(orderID, customerID)
 				order.AddItem(item)
 				return order
 			},
@@ -113,7 +114,7 @@ func TestRemoveItem(t *testing.T) {
 		{
 			name: "delete from empty",
 			setup: func() *Order {
-				order := NewOrder(orderID, CustomerID)
+				order := NewOrder(orderID, customerID)
 				return order
 			},
 			expectedErr: ErrOrderItemNotFound,
@@ -121,7 +122,7 @@ func TestRemoveItem(t *testing.T) {
 		{
 			name: "delete unknown",
 			setup: func() *Order {
-				order := NewOrder(orderID, CustomerID)
+				order := NewOrder(orderID, customerID)
 				otherItem := &OrderItem{
 					id:    2,
 					name:  "other",
@@ -135,7 +136,7 @@ func TestRemoveItem(t *testing.T) {
 		{
 			name: "delete from cancelled",
 			setup: func() *Order {
-				order := NewOrder(orderID, CustomerID)
+				order := NewOrder(orderID, customerID)
 				order.status = StatusCancelled
 				return order
 			},
@@ -144,7 +145,7 @@ func TestRemoveItem(t *testing.T) {
 		{
 			name: "delete from shipped",
 			setup: func() *Order {
-				order := NewOrder(orderID, CustomerID)
+				order := NewOrder(orderID, customerID)
 				order.status = StatusShipped
 				return order
 			},
@@ -167,8 +168,6 @@ func TestRemoveItem(t *testing.T) {
 }
 
 func TestPay(t *testing.T) {
-	orderID, _ := NewOrderID("orderID")
-	CustomerID, _ := NewCustomerID("customerID")
 	tests := []struct {
 		name        string
 		setup       func() *Order
@@ -177,7 +176,7 @@ func TestPay(t *testing.T) {
 		{
 			name: "ok",
 			setup: func() *Order {
-				order := NewOrder(orderID, CustomerID)
+				order := NewOrder(orderID, customerID)
 				item := &OrderItem{
 					id:    2,
 					name:  "item",
@@ -191,7 +190,7 @@ func TestPay(t *testing.T) {
 		{
 			name: "pay empty order",
 			setup: func() *Order {
-				order := NewOrder(orderID, CustomerID)
+				order := NewOrder(orderID, customerID)
 				return order
 			},
 			expectedErr: ErrOrderEmpty,
@@ -199,7 +198,7 @@ func TestPay(t *testing.T) {
 		{
 			name: "pay paid order",
 			setup: func() *Order {
-				order := NewOrder(orderID, CustomerID)
+				order := NewOrder(orderID, customerID)
 				item := &OrderItem{
 					id:    2,
 					name:  "item",
@@ -214,7 +213,7 @@ func TestPay(t *testing.T) {
 		{
 			name: "pay shipped order",
 			setup: func() *Order {
-				order := NewOrder(orderID, CustomerID)
+				order := NewOrder(orderID, customerID)
 				item := &OrderItem{
 					id:    2,
 					name:  "item",
@@ -229,7 +228,7 @@ func TestPay(t *testing.T) {
 		{
 			name: "pay cancelled order",
 			setup: func() *Order {
-				order := NewOrder(orderID, CustomerID)
+				order := NewOrder(orderID, customerID)
 				item := &OrderItem{
 					id:    2,
 					name:  "item",
@@ -258,8 +257,6 @@ func TestPay(t *testing.T) {
 }
 
 func TestShip(t *testing.T) {
-	orderID, _ := NewOrderID("orderID")
-	CustomerID, _ := NewCustomerID("customerID")
 	tests := []struct {
 		name        string
 		setup       func() *Order
@@ -268,7 +265,7 @@ func TestShip(t *testing.T) {
 		{
 			name: "ok",
 			setup: func() *Order {
-				order := NewOrder(orderID, CustomerID)
+				order := NewOrder(orderID, customerID)
 				order.status = StatusPaid
 				return order
 			},
@@ -277,7 +274,7 @@ func TestShip(t *testing.T) {
 		{
 			name: "ship shipped order",
 			setup: func() *Order {
-				order := NewOrder(orderID, CustomerID)
+				order := NewOrder(orderID, customerID)
 				order.status = StatusShipped
 				return order
 			},
@@ -286,7 +283,7 @@ func TestShip(t *testing.T) {
 		{
 			name: "ship cancelled order",
 			setup: func() *Order {
-				order := NewOrder(orderID, CustomerID)
+				order := NewOrder(orderID, customerID)
 				order.status = StatusCancelled
 				return order
 			},
@@ -295,7 +292,7 @@ func TestShip(t *testing.T) {
 		{
 			name: "ship created order",
 			setup: func() *Order {
-				order := NewOrder(orderID, CustomerID)
+				order := NewOrder(orderID, customerID)
 				order.status = StatusCreated
 				return order
 			},
@@ -318,8 +315,6 @@ func TestShip(t *testing.T) {
 }
 
 func TestCancel(t *testing.T) {
-	orderID, _ := NewOrderID("orderID")
-	CustomerID, _ := NewCustomerID("customerID")
 	tests := []struct {
 		name        string
 		setup       func() *Order
@@ -328,7 +323,7 @@ func TestCancel(t *testing.T) {
 		{
 			name: "ok",
 			setup: func() *Order {
-				order := NewOrder(orderID, CustomerID)
+				order := NewOrder(orderID, customerID)
 				order.status = StatusCreated
 				return order
 			},
@@ -337,7 +332,7 @@ func TestCancel(t *testing.T) {
 		{
 			name: "cancel shipped order",
 			setup: func() *Order {
-				order := NewOrder(orderID, CustomerID)
+				order := NewOrder(orderID, customerID)
 				order.status = StatusShipped
 				return order
 			},
@@ -360,8 +355,6 @@ func TestCancel(t *testing.T) {
 }
 
 func TestTotal(t *testing.T) {
-	orderID, _ := NewOrderID("orderID")
-	CustomerID, _ := NewCustomerID("customerID")
 	tests := []struct {
 		name     string
 		setup    func() *Order
@@ -370,7 +363,7 @@ func TestTotal(t *testing.T) {
 		{
 			name: "ok",
 			setup: func() *Order {
-				order := NewOrder(orderID, CustomerID)
+				order := NewOrder(orderID, customerID)
 				item := &OrderItem{
 					id:    2,
 					name:  "item",
@@ -384,7 +377,7 @@ func TestTotal(t *testing.T) {
 		{
 			name: "total of many",
 			setup: func() *Order {
-				order := NewOrder(orderID, CustomerID)
+				order := NewOrder(orderID, customerID)
 				item := &OrderItem{
 					id:    1,
 					name:  "item",
@@ -404,7 +397,7 @@ func TestTotal(t *testing.T) {
 		{
 			name: "ok",
 			setup: func() *Order {
-				order := NewOrder(orderID, CustomerID)
+				order := NewOrder(orderID, customerID)
 				return order
 			},
 			expected: 0,
