@@ -1,51 +1,44 @@
 package order
 
-import "sync"
-
 type OrderItem struct {
 	id    ItemID
 	name  string
 	price Price
 }
 
-func (i *OrderItem) GetID() ItemID {
+func (i OrderItem) ID() ItemID {
 	return i.id
 }
 
 type OrderItemFactory struct {
-	nextID ItemID
-	prices map[string]Price
-	mtx    sync.Mutex
+	catalog ProductCatalog
 }
 
-func NewOrderItemFactory() *OrderItemFactory {
+func NewOrderItemFactory(catalog ProductCatalog) *OrderItemFactory {
 	return &OrderItemFactory{
-		nextID: 1,
-		prices: make(map[string]Price),
+		catalog: catalog,
 	}
 }
 
-func (f *OrderItemFactory) AddItem(name string, price Price) {
-	f.mtx.Lock()
-	f.prices[name] = price
-	f.mtx.Unlock()
-}
-
-func (f *OrderItemFactory) NewOrderItem(name string) (*OrderItem, error) {
-	f.mtx.Lock()
-	defer f.mtx.Unlock()
-
-	price, ok := f.prices[name]
-	if !ok {
-		return &OrderItem{}, ErrUnknownOrderItem
+func (f *OrderItemFactory) New(name string) (*OrderItem, error) {
+	product, err := f.catalog.GetProduct(name)
+	if err != nil {
+		return nil, err
 	}
-
-	id := f.nextID
-	f.nextID = NewItemID(uint64(id) + 1)
 
 	return &OrderItem{
-		id:    id,
-		name:  name,
-		price: price,
+		id:    product.ID,
+		name:  product.Name,
+		price: product.Price,
 	}, nil
+}
+
+type ProductCatalog interface {
+	GetProduct(name string) (Product, error)
+}
+
+type Product struct {
+	ID    ItemID
+	Name  string
+	Price Price
 }

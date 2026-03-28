@@ -8,9 +8,12 @@ import (
 func TestRemoveItem(t *testing.T) {
 	orderID, _ := NewOrderID("orderID")
 	CustomerID, _ := NewCustomerID("customerID")
-	OrderItemFactory := NewOrderItemFactory()
-	item, _ := OrderItemFactory.NewOrderItem("item1")
-	itemID := item.GetID()
+	item := &OrderItem{
+		id:    1,
+		name:  "hello",
+		price: 100,
+	}
+	itemID := item.ID()
 	tests := []struct {
 		name        string
 		setup       func() *Order
@@ -26,9 +29,23 @@ func TestRemoveItem(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			name: "delete unknown/from empty",
+			name: "delete from empty",
 			setup: func() *Order {
 				order := NewOrder(orderID, CustomerID)
+				return order
+			},
+			expectedErr: ErrOrderItemNotFound,
+		},
+		{
+			name: "delete unknown",
+			setup: func() *Order {
+				order := NewOrder(orderID, CustomerID)
+				otherItem := &OrderItem{
+					id:    2,
+					name:  "other",
+					price: 100,
+				}
+				order.AddItem(otherItem)
 				return order
 			},
 			expectedErr: ErrOrderItemNotFound,

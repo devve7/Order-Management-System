@@ -2,8 +2,6 @@
 package order
 
 import (
-	"errors"
-	"sync"
 	"time"
 )
 
@@ -13,7 +11,6 @@ type Order struct {
 	items      []*OrderItem
 	status     OrderStatus
 	createdAt  time.Time
-	mtx        sync.RWMutex
 }
 
 func NewOrder(id OrderID, customerID CustomerID) *Order {
@@ -28,10 +25,8 @@ func NewOrder(id OrderID, customerID CustomerID) *Order {
 }
 
 func (o *Order) AddItem(item *OrderItem) error {
-	o.mtx.Lock()
-	defer o.mtx.Unlock()
 	if item == nil {
-		return errors.New("item cannot be nil")
+		return ErrOrderItemNotFound
 	}
 	if o.status == StatusCancelled {
 		return ErrOrderCancelled
@@ -45,8 +40,6 @@ func (o *Order) AddItem(item *OrderItem) error {
 }
 
 func (o *Order) RemoveItem(id ItemID) error {
-	o.mtx.Lock()
-	defer o.mtx.Unlock()
 	if o.status == StatusCancelled {
 		return ErrOrderCancelled
 	}
@@ -57,7 +50,7 @@ func (o *Order) RemoveItem(id ItemID) error {
 		return ErrOrderItemNotFound
 	}
 	for index, item := range o.items {
-		if item != nil && item.id == id {
+		if item.ID() == id {
 			o.items = append(o.items[:index], o.items[index+1:]...)
 			return nil
 		}
@@ -66,8 +59,6 @@ func (o *Order) RemoveItem(id ItemID) error {
 }
 
 func (o *Order) Pay() error {
-	o.mtx.Lock()
-	defer o.mtx.Unlock()
 	if len(o.items) == 0 {
 		return ErrOrderEmpty
 	}
@@ -79,8 +70,6 @@ func (o *Order) Pay() error {
 }
 
 func (o *Order) Ship() error {
-	o.mtx.Lock()
-	defer o.mtx.Unlock()
 	if o.status == StatusPaid {
 		o.status = StatusShipped
 		return nil
@@ -89,8 +78,6 @@ func (o *Order) Ship() error {
 }
 
 func (o *Order) Cancel() error {
-	o.mtx.Lock()
-	defer o.mtx.Unlock()
 	if o.status == StatusShipped {
 		return ErrCannotCancel
 	}
@@ -98,18 +85,20 @@ func (o *Order) Cancel() error {
 	return nil
 }
 
-func (o *Order) Total() (Price, error) {
-	o.mtx.RLock()
-	defer o.mtx.RUnlock()
-	if o.items == nil {
-		return 0, ErrOrderEmpty
-	}
+func (o *Order) Total() Price {
 	if len(o.items) == 0 {
-		return 0, ErrOrderEmpty
+		return 0
 	}
 	var total float64 = 0
 	for _, item := range o.items {
 		total += float64(item.price)
 	}
-	return NewPrice(total)
+	price, _ := NewPrice(total)
+	return price
 }
+
+/*func (o *Order) ID() OrderID
+func (o *Order) CustomerID() CustomerID
+func (o *Order) Status() OrderStatus
+func (o *Order) Items() []*OrderItem
+func (o *Order) CreatedAt() time.Time*/
