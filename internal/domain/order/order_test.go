@@ -78,6 +78,11 @@ func TestAddItem(t *testing.T) {
 			order := tt.setup()
 			err := order.AddItem(tt.item)
 			errCompare(t, err, tt.expectedErr)
+			if tt.expectedErr == nil {
+				if len(order.items) != 1 {
+					t.Errorf("item was not added")
+				}
+			}
 		})
 	}
 }
@@ -152,6 +157,11 @@ func TestRemoveItem(t *testing.T) {
 			order := tt.setup()
 			err := order.RemoveItem(itemID)
 			errCompare(t, err, tt.expectedErr)
+			if tt.expectedErr == nil {
+				if len(order.items) != 0 {
+					t.Errorf("item was not removed")
+				}
+			}
 		})
 	}
 }
@@ -238,6 +248,11 @@ func TestPay(t *testing.T) {
 			order := tt.setup()
 			err := order.Pay()
 			errCompare(t, err, tt.expectedErr)
+			if tt.expectedErr == nil {
+				if order.status != StatusPaid {
+					t.Errorf("item was not paid")
+				}
+			}
 		})
 	}
 }
@@ -293,6 +308,11 @@ func TestShip(t *testing.T) {
 			order := tt.setup()
 			err := order.Ship()
 			errCompare(t, err, tt.expectedErr)
+			if tt.expectedErr == nil {
+				if order.status != StatusShipped {
+					t.Errorf("item was not shipped")
+				}
+			}
 		})
 	}
 }
@@ -330,6 +350,11 @@ func TestCancel(t *testing.T) {
 			order := tt.setup()
 			err := order.Cancel()
 			errCompare(t, err, tt.expectedErr)
+			if tt.expectedErr == nil {
+				if order.status != StatusCancelled {
+					t.Errorf("item was not cancelled")
+				}
+			}
 		})
 	}
 }
@@ -355,6 +380,26 @@ func TestTotal(t *testing.T) {
 				return order
 			},
 			expected: 100,
+		},
+		{
+			name: "total of many",
+			setup: func() *Order {
+				order := NewOrder(orderID, CustomerID)
+				item := &OrderItem{
+					id:    1,
+					name:  "item",
+					price: 100,
+				}
+				item2 := &OrderItem{
+					id:    2,
+					name:  "item",
+					price: 100,
+				}
+				order.AddItem(item)
+				order.AddItem(item2)
+				return order
+			},
+			expected: 200,
 		},
 		{
 			name: "ok",
