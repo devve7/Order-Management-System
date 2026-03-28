@@ -5,6 +5,13 @@ import (
 	"testing"
 )
 
+func errCompare(t *testing.T, err error, expectedErr error) {
+	t.Helper()
+	if !errors.Is(err, expectedErr) {
+		t.Errorf("expected (%v), got (%v)", expectedErr, err)
+	}
+}
+
 func TestAddItem(t *testing.T) {
 	orderID, _ := NewOrderID("orderID")
 	CustomerID, _ := NewCustomerID("customerID")
@@ -70,9 +77,7 @@ func TestAddItem(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			order := tt.setup()
 			err := order.AddItem(tt.item)
-			if !errors.Is(err, tt.expectedErr) {
-				t.Errorf("expected (%v), got (%v)", tt.expectedErr, err)
-			}
+			errCompare(t, err, tt.expectedErr)
 		})
 	}
 }
@@ -146,9 +151,93 @@ func TestRemoveItem(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			order := tt.setup()
 			err := order.RemoveItem(itemID)
-			if !errors.Is(err, tt.expectedErr) {
-				t.Errorf("expected (%v), got (%v)", tt.expectedErr, err)
-			}
+			errCompare(t, err, tt.expectedErr)
+		})
+	}
+}
+
+func TestPay(t *testing.T) {
+	orderID, _ := NewOrderID("orderID")
+	CustomerID, _ := NewCustomerID("customerID")
+	tests := []struct {
+		name        string
+		setup       func() *Order
+		expectedErr error
+	}{
+		{
+			name: "ok",
+			setup: func() *Order {
+				order := NewOrder(orderID, CustomerID)
+				item := &OrderItem{
+					id:    2,
+					name:  "item",
+					price: 100,
+				}
+				order.AddItem(item)
+				return order
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "pay empty order",
+			setup: func() *Order {
+				order := NewOrder(orderID, CustomerID)
+				return order
+			},
+			expectedErr: ErrOrderEmpty,
+		},
+		{
+			name: "pay paid order",
+			setup: func() *Order {
+				order := NewOrder(orderID, CustomerID)
+				item := &OrderItem{
+					id:    2,
+					name:  "item",
+					price: 100,
+				}
+				order.AddItem(item)
+				order.status = StatusPaid
+				return order
+			},
+			expectedErr: ErrCannotPay,
+		},
+		{
+			name: "pay shipped order",
+			setup: func() *Order {
+				order := NewOrder(orderID, CustomerID)
+				item := &OrderItem{
+					id:    2,
+					name:  "item",
+					price: 100,
+				}
+				order.AddItem(item)
+				order.status = StatusShipped
+				return order
+			},
+			expectedErr: ErrCannotPay,
+		},
+		{
+			name: "pay cancelled order",
+			setup: func() *Order {
+				order := NewOrder(orderID, CustomerID)
+				item := &OrderItem{
+					id:    2,
+					name:  "item",
+					price: 100,
+				}
+				order.AddItem(item)
+				order.status = StatusCancelled
+				return order
+			},
+			expectedErr: ErrCannotPay,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			order := tt.setup()
+			err := order.Pay()
+			errCompare(t, err, tt.expectedErr)
 		})
 	}
 }
