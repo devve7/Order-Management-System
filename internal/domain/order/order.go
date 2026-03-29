@@ -97,6 +97,21 @@ func (o *Order) Total() Price {
 	return price
 }
 
+func (o *Order) Clone() *Order {
+	copyOrder := *o
+
+	itemsCopy := make([]*OrderItem, len(o.items))
+
+	for i, item := range o.items {
+		itemCopy := *item
+		itemsCopy[i] = &itemCopy
+	}
+
+	copyOrder.items = itemsCopy
+
+	return &copyOrder
+}
+
 func (o *Order) ID() OrderID {
 	return o.id
 }
