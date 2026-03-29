@@ -5,7 +5,5 @@ type Repository interface {
 
 	Get(id OrderID) (*Order, error)
 
-	Update(order *Order) error
-
 	NextID() (OrderID, error)
 }
