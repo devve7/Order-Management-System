@@ -114,3 +114,8 @@ func (u *UseCase) CancelOrder(orderID order.OrderID) error {
 	}
 	return nil
 }
+
+func (u *UseCase) GetOrder(orderID order.OrderID) (order.Order, error) {
+	order, err := u.repo.Get(orderID)
+	return *order, err
+}
