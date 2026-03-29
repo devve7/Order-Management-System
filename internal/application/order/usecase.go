@@ -29,7 +29,11 @@ func (u *UseCase) CreateOrder(customerID order.CustomerID) (order.OrderID, error
 	return orderID, nil
 }
 
-func (u *UseCase) AddItem(orderID order.OrderID, item *order.OrderItem) error {
+func (u *UseCase) AddItem(orderID order.OrderID, name string) error {
+	item, err := u.itemsFactory.New(name)
+	if err != nil {
+		return err
+	}
 	order, err := u.repo.Get(orderID)
 	if err != nil {
 		return err
