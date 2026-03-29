@@ -5,12 +5,14 @@ import (
 )
 
 type UseCase struct {
-	repo order.Repository
+	itemsFactory *order.OrderItemFactory
+	repo         order.Repository
 }
 
-func NewUseCase(repo order.Repository) *UseCase {
+func NewUseCase(factory *order.OrderItemFactory, repo order.Repository) *UseCase {
 	return &UseCase{
-		repo: repo,
+		itemsFactory: factory,
+		repo:         repo,
 	}
 }
 
@@ -59,8 +61,6 @@ func (u *UseCase) RemoveItem(orderID order.OrderID, itemID order.ItemID) error {
 
 	return nil
 }
-
-// PayOrder(orderID string) error
 
 func (u *UseCase) PayOrder(orderID order.OrderID) error {
 	order, err := u.repo.Get(orderID)
