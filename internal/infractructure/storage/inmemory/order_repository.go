@@ -1,3 +1,4 @@
+// Package inmemory ...
 package inmemory
 
 import (
