@@ -9,3 +9,11 @@ type OrderItem struct {
 func (i OrderItem) ID() ItemID {
 	return i.id
 }
+
+func (i OrderItem) Name() string {
+	return i.name
+}
+
+func (i OrderItem) Price() Price {
+	return i.price
+}
