@@ -52,6 +52,14 @@ func (r *InMemoryOrderRepository) Update(order *do.Order) error {
 	return nil
 }
 
+func (r *InMemoryOrderRepository) NextID() (do.OrderID, error) {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+	result := r.nextID
+	r.nextID += 1
+	return result, nil
+}
+
 func (r *InMemoryOrderRepository) Get(id do.OrderID) (*do.Order, error) {
 	r.mtx.RLock()
 	defer r.mtx.RUnlock()
@@ -62,10 +70,12 @@ func (r *InMemoryOrderRepository) Get(id do.OrderID) (*do.Order, error) {
 	return order.Clone(), nil
 }
 
-func (r *InMemoryOrderRepository) NextID() (do.OrderID, error) {
-	r.mtx.Lock()
-	defer r.mtx.Unlock()
-	result := r.nextID
-	r.nextID += 1
+func (r *InMemoryOrderRepository) GetAll() ([]*do.Order, error) {
+	r.mtx.RLock()
+	defer r.mtx.RUnlock()
+	result := make([]*do.Order, 0, len(r.orders))
+	for _, v := range r.orders {
+		result = append(result, v.Clone())
+	}
 	return result, nil
 }
