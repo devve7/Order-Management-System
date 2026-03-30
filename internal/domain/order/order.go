@@ -125,7 +125,13 @@ func (o *Order) Status() OrderStatus {
 }
 
 func (o *Order) Items() []*OrderItem {
-	return o.items
+	itemsCopy := make([]*OrderItem, len(o.items))
+
+	for i, item := range o.items {
+		itemCopy := *item
+		itemsCopy[i] = &itemCopy
+	}
+	return itemsCopy
 }
 
 func (o *Order) CreatedAt() time.Time {

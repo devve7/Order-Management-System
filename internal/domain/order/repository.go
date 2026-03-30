@@ -8,4 +8,6 @@ type Repository interface {
 	Update(order *Order) error
 
 	NextID() (OrderID, error)
+
+	GetAll() ([]*Order, error)
 }

@@ -27,10 +27,19 @@ func NewItemID(id int64) (ItemID, error) {
 	return ItemID(id), nil
 }
 
+type ProductID int64
+
+func NewProductID(id int64) (ProductID, error) {
+	if id < 0 {
+		return ProductID(0), ErrInvalidID
+	}
+	return ProductID(id), nil
+}
+
 type Price float64
 
 func NewPrice(amount float64) (Price, error) {
-	if amount <= 0 {
+	if amount < 0 {
 		return 0, ErrInvalidPrice
 	}
 	return Price(amount), nil
