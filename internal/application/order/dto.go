@@ -6,18 +6,18 @@ import (
 )
 
 type OrderItemDTO struct {
-	ID    int64
-	Name  string
-	Price float64
+	ID    int64   `json:"id"`
+	Name  string  `json:"name"`
+	Price float64 `json:"price"`
 }
 
 type OrderDTO struct {
-	ID         int64
-	CustomerID int64
-	Status     string
-	CreatedAt  time.Time
-	Items      []OrderItemDTO
-	Total      float64
+	ID         int64          `json:"id"`
+	CustomerID int64          `json:"customer_id"`
+	Status     string         `json:"status"`
+	CreatedAt  time.Time      `json:"created_at"`
+	Items      []OrderItemDTO `json:"items"`
+	Total      float64        `json:"total"`
 }
 
 func ToOrderDTO(order *do.Order) OrderDTO {
