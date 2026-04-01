@@ -2,7 +2,6 @@ package http
 
 import (
 	application_order "Order-Management-System/internal/application/order"
-	"time"
 )
 
 type ErrorResponse struct {
@@ -10,16 +9,16 @@ type ErrorResponse struct {
 }
 
 type OrderItemDTO struct {
-	ID    int64   `json:"id"`
+	ID    int64   `json:"order_item_id"`
 	Name  string  `json:"name"`
 	Price float64 `json:"price"`
 }
 
 type OrderDTO struct {
-	ID         int64          `json:"id"`
+	ID         int64          `json:"order_id"`
 	CustomerID int64          `json:"customer_id"`
 	Status     string         `json:"status"`
-	CreatedAt  time.Time      `json:"created_at"`
+	CreatedAt  string         `json:"created_at"`
 	Items      []OrderItemDTO `json:"items"`
 	Total      float64        `json:"total"`
 }
@@ -39,7 +38,7 @@ func ToOrderDTO(orderDTO *application_order.OrderDTO) OrderDTO {
 		ID:         int64(orderDTO.ID),
 		CustomerID: int64(orderDTO.CustomerID),
 		Status:     string(orderDTO.Status),
-		CreatedAt:  orderDTO.CreatedAt,
+		CreatedAt:  orderDTO.CreatedAt.Format("2006-01-02 15:04:05"),
 		Items:      items,
 		Total:      float64(orderDTO.Total),
 	}
