@@ -104,56 +104,14 @@ func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) AddItem(w http.ResponseWriter, r *http.Request) {
-	var req NameDTO
-	decoder := json.NewDecoder(r.Body)
-	decoder.DisallowUnknownFields()
-
-	if err := decoder.Decode(&req); err != nil {
-		h.writeError(w, err, http.StatusBadRequest)
-		return
-	}
-	reqOrderIDString := mux.Vars(r)["id"]
-	reqOrderID, err := strconv.Atoi(reqOrderIDString)
-	if err != nil {
-		h.writeError(w, err, http.StatusBadRequest)
-		return
-	}
-	if req.Name == "" {
-		h.writeError(w, errors.New("name is required"), http.StatusBadRequest)
-		return
-	}
-	orderID, err := domain_order.NewOrderID(int64(reqOrderID))
-	if err != nil {
-		h.writeError(w, err, mapError(err))
-		return
-	}
-
-	orderItemID, err := h.usecase.AddItem(orderID, req.Name)
-	if err != nil {
-		h.writeError(w, err, mapError(err))
-		return
-	}
-	resp := OrderItemIDDTO{
-		OrderItemID: int64(orderItemID),
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		log.Printf("failed to write add item response: %v", err)
-	}
-}
-
 func (h *Handler) GetOrder(w http.ResponseWriter, r *http.Request) {
 	reqOrderIDString := mux.Vars(r)["id"]
-	reqOrderID, err := strconv.Atoi(reqOrderIDString)
+	reqOrderID, err := strconv.ParseInt(reqOrderIDString, 10, 64)
 	if err != nil {
 		h.writeError(w, err, http.StatusBadRequest)
 		return
 	}
-	orderID, err := domain_order.NewOrderID(int64(reqOrderID))
+	orderID, err := domain_order.NewOrderID(reqOrderID)
 	if err != nil {
 		h.writeError(w, err, mapError(err))
 		return
@@ -190,4 +148,79 @@ func (h *Handler) GetOrders(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(ordersDTO); err != nil {
 		log.Printf("failed to write get order response")
 	}
+}
+
+func (h *Handler) AddItem(w http.ResponseWriter, r *http.Request) {
+	var req NameDTO
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+
+	if err := decoder.Decode(&req); err != nil {
+		h.writeError(w, err, http.StatusBadRequest)
+		return
+	}
+	reqOrderIDString := mux.Vars(r)["id"]
+	reqOrderID, err := strconv.ParseInt(reqOrderIDString, 10, 64)
+	if err != nil {
+		h.writeError(w, err, http.StatusBadRequest)
+		return
+	}
+	if req.Name == "" {
+		h.writeError(w, errors.New("name is required"), http.StatusBadRequest)
+		return
+	}
+	orderID, err := domain_order.NewOrderID(reqOrderID)
+	if err != nil {
+		h.writeError(w, err, mapError(err))
+		return
+	}
+
+	orderItemID, err := h.usecase.AddItem(orderID, req.Name)
+	if err != nil {
+		h.writeError(w, err, mapError(err))
+		return
+	}
+	resp := OrderItemIDDTO{
+		OrderItemID: int64(orderItemID),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		log.Printf("failed to write add item response: %v", err)
+	}
+}
+
+func (h *Handler) DeleteItem(w http.ResponseWriter, r *http.Request) {
+	reqOrderIDString := mux.Vars(r)["id"]
+	reqOrderID, err := strconv.ParseInt(reqOrderIDString, 10, 64)
+	if err != nil {
+		h.writeError(w, err, http.StatusBadRequest)
+		return
+	}
+	reqOrderItemIDString := mux.Vars(r)["item_id"]
+
+	reqOrderItemID, err := strconv.ParseInt(reqOrderItemIDString, 10, 64)
+	if err != nil {
+		h.writeError(w, err, http.StatusBadRequest)
+		return
+	}
+	orderID, err := domain_order.NewOrderID(reqOrderID)
+	if err != nil {
+		h.writeError(w, err, mapError(err))
+		return
+	}
+	orderItemID, err := domain_order.NewItemID(reqOrderItemID)
+	if err != nil {
+		h.writeError(w, err, mapError(err))
+		return
+	}
+
+	err = h.usecase.RemoveItem(orderID, orderItemID)
+	if err != nil {
+		h.writeError(w, err, mapError(err))
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
