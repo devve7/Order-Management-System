@@ -126,7 +126,7 @@ func (h *Handler) GetOrder(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		log.Printf("failed to write get order response")
+		log.Printf("failed to write get order response: %v", err)
 	}
 }
 
@@ -146,7 +146,7 @@ func (h *Handler) GetOrders(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	if err := json.NewEncoder(w).Encode(ordersDTO); err != nil {
-		log.Printf("failed to write get order response")
+		log.Printf("failed to write get order response: %v", err)
 	}
 }
 
