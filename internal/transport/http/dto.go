@@ -30,3 +30,11 @@ type CreateOrderRequestDTO struct {
 type CreateOrderResponseDTO struct {
 	OrderID int64 `json:"order_id"`
 }
+
+type AddItemRequestDTO struct {
+	Name string `json:"name"`
+}
+
+type AddItemResponseDTO struct {
+	OrderItemID int64 `json:"order_item_id"`
+}

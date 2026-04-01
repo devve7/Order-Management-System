@@ -8,6 +8,9 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 type Handler struct {
@@ -91,6 +94,47 @@ func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	resp := CreateOrderResponseDTO{
 		OrderID: int64(orderID),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		log.Printf("failed to write create order response: %v", err)
+	}
+}
+
+func (h *Handler) AddItem(w http.ResponseWriter, r *http.Request) {
+	var req AddItemRequestDTO
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+
+	if err := decoder.Decode(&req); err != nil {
+		h.writeError(w, err, http.StatusBadRequest)
+		return
+	}
+	reqOrderIDString := mux.Vars(r)["id"]
+	reqOrderID, err := strconv.Atoi(reqOrderIDString)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if req.Name == "" {
+		h.writeError(w, errors.New("name is required"), http.StatusBadRequest)
+	}
+	orderID, err := domain_order.NewOrderID(int64(reqOrderID))
+	if err != nil {
+		h.writeError(w, err, mapError(err))
+		return
+	}
+
+	orderItemID, err := h.usecase.AddItem(orderID, req.Name)
+	if err != nil {
+		h.writeError(w, err, mapError(err))
+		return
+	}
+	resp := AddItemResponseDTO{
+		OrderItemID: int64(orderItemID),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
