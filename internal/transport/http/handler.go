@@ -158,16 +158,36 @@ func (h *Handler) GetOrder(w http.ResponseWriter, r *http.Request) {
 		h.writeError(w, err, mapError(err))
 		return
 	}
-	orderDTO, err := h.usecase.GetOrder(orderID)
+	order, err := h.usecase.GetOrder(orderID)
 	if err != nil {
 		h.writeError(w, err, mapError(err))
 		return
 	}
-	resp := ToOrderDTO(&orderDTO)
+	resp := ToOrderDTO(&order)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		log.Printf("failed to write get order response")
+	}
+}
+
+func (h *Handler) GetOrders(w http.ResponseWriter, r *http.Request) {
+	orders, err := h.usecase.GetOrders()
+	if err != nil {
+		h.writeError(w, err, mapError(err))
+		return
+	}
+	ordersDTO := make([]OrderDTO, 0, len(orders))
+	for _, order := range orders {
+		orderDTO := ToOrderDTO(&order)
+		ordersDTO = append(ordersDTO, orderDTO)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	if err := json.NewEncoder(w).Encode(ordersDTO); err != nil {
 		log.Printf("failed to write get order response")
 	}
 }
