@@ -224,3 +224,66 @@ func (h *Handler) DeleteItem(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (h *Handler) PayOrder(w http.ResponseWriter, r *http.Request) {
+	reqOrderIDString := mux.Vars(r)["id"]
+	reqOrderID, err := strconv.ParseInt(reqOrderIDString, 10, 64)
+	if err != nil {
+		h.writeError(w, err, http.StatusBadRequest)
+		return
+	}
+	orderID, err := domain_order.NewOrderID(reqOrderID)
+	if err != nil {
+		h.writeError(w, err, mapError(err))
+		return
+	}
+	err = h.usecase.PayOrder(orderID)
+	if err != nil {
+		h.writeError(w, err, mapError(err))
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *Handler) ShipOrder(w http.ResponseWriter, r *http.Request) {
+	reqOrderIDString := mux.Vars(r)["id"]
+	reqOrderID, err := strconv.ParseInt(reqOrderIDString, 10, 64)
+	if err != nil {
+		h.writeError(w, err, http.StatusBadRequest)
+		return
+	}
+	orderID, err := domain_order.NewOrderID(reqOrderID)
+	if err != nil {
+		h.writeError(w, err, mapError(err))
+		return
+	}
+	err = h.usecase.ShipOrder(orderID)
+	if err != nil {
+		h.writeError(w, err, mapError(err))
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *Handler) CancelOrder(w http.ResponseWriter, r *http.Request) {
+	reqOrderIDString := mux.Vars(r)["id"]
+	reqOrderID, err := strconv.ParseInt(reqOrderIDString, 10, 64)
+	if err != nil {
+		h.writeError(w, err, http.StatusBadRequest)
+		return
+	}
+	orderID, err := domain_order.NewOrderID(reqOrderID)
+	if err != nil {
+		h.writeError(w, err, mapError(err))
+		return
+	}
+	err = h.usecase.CancelOrder(orderID)
+	if err != nil {
+		h.writeError(w, err, mapError(err))
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+}
