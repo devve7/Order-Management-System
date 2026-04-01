@@ -4,6 +4,10 @@ import (
 	"time"
 )
 
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
 type OrderItemDTO struct {
 	ID    int64   `json:"id"`
 	Name  string  `json:"name"`
@@ -19,12 +23,8 @@ type OrderDTO struct {
 	Total      float64        `json:"total"`
 }
 
-type ErrorResponse struct {
-	Error string `json:"error"`
-}
-
 type CreateOrderRequestDTO struct {
-	CustomerID int64 `json:"customer_id"`
+	CustomerID *int64 `json:"customer_id"`
 }
 
 type CreateOrderResponseDTO struct {

@@ -64,12 +64,20 @@ func (h *Handler) writeError(w http.ResponseWriter, err error, status int) {
 
 func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	var req CreateOrderRequestDTO
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+
+	if err := decoder.Decode(&req); err != nil {
 		h.writeError(w, err, http.StatusBadRequest)
 		return
 	}
 
-	customerID, err := domain_order.NewCustomerID(req.CustomerID)
+	if req.CustomerID == nil {
+		h.writeError(w, errors.New("customer_id is required"), http.StatusBadRequest)
+		return
+	}
+
+	customerID, err := domain_order.NewCustomerID(*req.CustomerID)
 	if err != nil {
 		h.writeError(w, err, mapError(err))
 		return
