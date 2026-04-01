@@ -200,7 +200,6 @@ func (h *Handler) DeleteItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	reqOrderItemIDString := mux.Vars(r)["item_id"]
-
 	reqOrderItemID, err := strconv.ParseInt(reqOrderItemIDString, 10, 64)
 	if err != nil {
 		h.writeError(w, err, http.StatusBadRequest)
@@ -222,5 +221,6 @@ func (h *Handler) DeleteItem(w http.ResponseWriter, r *http.Request) {
 		h.writeError(w, err, mapError(err))
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusNoContent)
 }
