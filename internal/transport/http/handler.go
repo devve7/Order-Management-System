@@ -85,8 +85,8 @@ func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		h.writeError(w, err, mapError(err))
 		return
 	}
-
-	orderID, err := h.usecase.CreateOrder(customerID)
+	ctx := r.Context()
+	orderID, err := h.usecase.CreateOrder(ctx, customerID)
 	if err != nil {
 		h.writeError(w, err, mapError(err))
 		return
@@ -116,7 +116,8 @@ func (h *Handler) GetOrder(w http.ResponseWriter, r *http.Request) {
 		h.writeError(w, err, mapError(err))
 		return
 	}
-	order, err := h.usecase.GetOrder(orderID)
+	ctx := r.Context()
+	order, err := h.usecase.GetOrder(ctx, orderID)
 	if err != nil {
 		h.writeError(w, err, mapError(err))
 		return
@@ -131,7 +132,8 @@ func (h *Handler) GetOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetOrders(w http.ResponseWriter, r *http.Request) {
-	orders, err := h.usecase.GetOrders()
+	ctx := r.Context()
+	orders, err := h.usecase.GetOrders(ctx)
 	if err != nil {
 		h.writeError(w, err, mapError(err))
 		return
@@ -174,8 +176,8 @@ func (h *Handler) AddItem(w http.ResponseWriter, r *http.Request) {
 		h.writeError(w, err, mapError(err))
 		return
 	}
-
-	orderItemID, err := h.usecase.AddItem(orderID, req.Name)
+	ctx := r.Context()
+	orderItemID, err := h.usecase.AddItem(ctx, orderID, req.Name)
 	if err != nil {
 		h.writeError(w, err, mapError(err))
 		return
@@ -215,8 +217,8 @@ func (h *Handler) DeleteItem(w http.ResponseWriter, r *http.Request) {
 		h.writeError(w, err, mapError(err))
 		return
 	}
-
-	err = h.usecase.RemoveItem(orderID, orderItemID)
+	ctx := r.Context()
+	err = h.usecase.RemoveItem(ctx, orderID, orderItemID)
 	if err != nil {
 		h.writeError(w, err, mapError(err))
 		return
@@ -237,7 +239,8 @@ func (h *Handler) PayOrder(w http.ResponseWriter, r *http.Request) {
 		h.writeError(w, err, mapError(err))
 		return
 	}
-	err = h.usecase.PayOrder(orderID)
+	ctx := r.Context()
+	err = h.usecase.PayOrder(ctx, orderID)
 	if err != nil {
 		h.writeError(w, err, mapError(err))
 		return
@@ -258,7 +261,8 @@ func (h *Handler) ShipOrder(w http.ResponseWriter, r *http.Request) {
 		h.writeError(w, err, mapError(err))
 		return
 	}
-	err = h.usecase.ShipOrder(orderID)
+	ctx := r.Context()
+	err = h.usecase.ShipOrder(ctx, orderID)
 	if err != nil {
 		h.writeError(w, err, mapError(err))
 		return
@@ -279,7 +283,8 @@ func (h *Handler) CancelOrder(w http.ResponseWriter, r *http.Request) {
 		h.writeError(w, err, mapError(err))
 		return
 	}
-	err = h.usecase.CancelOrder(orderID)
+	ctx := r.Context()
+	err = h.usecase.CancelOrder(ctx, orderID)
 	if err != nil {
 		h.writeError(w, err, mapError(err))
 		return

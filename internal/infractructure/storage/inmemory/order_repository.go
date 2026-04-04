@@ -3,6 +3,7 @@ package inmemory
 
 import (
 	do "Order-Management-System/internal/domain/order"
+	"context"
 	"sync"
 )
 
@@ -19,7 +20,7 @@ func NewInmemoryOrderRepository() *InMemoryOrderRepository {
 	}
 }
 
-func (r *InMemoryOrderRepository) Save(order *do.Order) error {
+func (r *InMemoryOrderRepository) Save(ctx context.Context, order *do.Order) error {
 	if order == nil {
 		return do.ErrOrderEmpty
 	}
@@ -34,7 +35,7 @@ func (r *InMemoryOrderRepository) Save(order *do.Order) error {
 	return nil
 }
 
-func (r *InMemoryOrderRepository) Update(order *do.Order) error {
+func (r *InMemoryOrderRepository) Update(ctx context.Context, order *do.Order) error {
 	if order == nil {
 		return do.ErrOrderEmpty
 	}
@@ -52,7 +53,7 @@ func (r *InMemoryOrderRepository) Update(order *do.Order) error {
 	return nil
 }
 
-func (r *InMemoryOrderRepository) NextID() (do.OrderID, error) {
+func (r *InMemoryOrderRepository) NextID(ctx context.Context) (do.OrderID, error) {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 	result := r.nextID
@@ -60,7 +61,7 @@ func (r *InMemoryOrderRepository) NextID() (do.OrderID, error) {
 	return result, nil
 }
 
-func (r *InMemoryOrderRepository) Get(id do.OrderID) (*do.Order, error) {
+func (r *InMemoryOrderRepository) Get(ctx context.Context, id do.OrderID) (*do.Order, error) {
 	r.mtx.RLock()
 	defer r.mtx.RUnlock()
 	order, ok := r.orders[id]
@@ -70,7 +71,7 @@ func (r *InMemoryOrderRepository) Get(id do.OrderID) (*do.Order, error) {
 	return order.Clone(), nil
 }
 
-func (r *InMemoryOrderRepository) GetAll() ([]*do.Order, error) {
+func (r *InMemoryOrderRepository) GetAll(ctx context.Context) ([]*do.Order, error) {
 	r.mtx.RLock()
 	defer r.mtx.RUnlock()
 	result := make([]*do.Order, 0, len(r.orders))

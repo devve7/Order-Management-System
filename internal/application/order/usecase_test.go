@@ -2,12 +2,14 @@ package order
 
 import (
 	do "Order-Management-System/internal/domain/order"
+	"context"
 	"errors"
 	"sync"
 	"testing"
 )
 
 func TestAddItem(t *testing.T) {
+	ctx := context.Background()
 	customerID, _ := do.NewCustomerID(1)
 
 	tests := []struct {
@@ -51,13 +53,13 @@ func TestAddItem(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			usecase := tt.setup()
-			orderID, _ := usecase.CreateOrder(customerID)
-			itemID, err := usecase.AddItem(orderID, "iphone")
+			orderID, _ := usecase.CreateOrder(ctx, customerID)
+			itemID, err := usecase.AddItem(ctx, orderID, "iphone")
 			if !errors.Is(err, tt.expectedErr) {
 				t.Errorf("expected (%v), got (%v)", tt.expectedErr, err)
 			}
 			if err == nil {
-				orderDTO, _ := usecase.GetOrder(orderID)
+				orderDTO, _ := usecase.GetOrder(ctx, orderID)
 				item := orderDTO.Items[0]
 				if itemID != do.ItemID(item.ID) {
 					t.Errorf("expected (%v), got (%v)", itemID, item.ID)
@@ -68,6 +70,7 @@ func TestAddItem(t *testing.T) {
 }
 
 func TestRemoveItem(t *testing.T) {
+	ctx := context.Background()
 	customerID, _ := do.NewCustomerID(1)
 
 	tests := []struct {
@@ -87,8 +90,8 @@ func TestRemoveItem(t *testing.T) {
 				factory := do.NewOrderItemFactory(catalog)
 				repo := NewFakeOrderRepository()
 				usecase := NewUseCase(factory, repo)
-				orderID, _ := usecase.CreateOrder(customerID)
-				itemID, _ := usecase.AddItem(orderID, "iphone")
+				orderID, _ := usecase.CreateOrder(ctx, customerID)
+				itemID, _ := usecase.AddItem(ctx, orderID, "iphone")
 
 				return usecase, orderID, itemID
 			},
@@ -106,9 +109,9 @@ func TestRemoveItem(t *testing.T) {
 				factory := do.NewOrderItemFactory(catalog)
 				repo := NewFakeOrderRepository()
 				usecase := NewUseCase(factory, repo)
-				orderID, _ := usecase.CreateOrder(customerID)
-				itemID, _ := usecase.AddItem(orderID, "iphone")
-				usecase.RemoveItem(orderID, itemID)
+				orderID, _ := usecase.CreateOrder(ctx, customerID)
+				itemID, _ := usecase.AddItem(ctx, orderID, "iphone")
+				usecase.RemoveItem(ctx, orderID, itemID)
 
 				return usecase, orderID, itemID
 			},
@@ -126,7 +129,7 @@ func TestRemoveItem(t *testing.T) {
 				factory := do.NewOrderItemFactory(catalog)
 				repo := NewFakeOrderRepository()
 				usecase := NewUseCase(factory, repo)
-				orderID, _ := usecase.CreateOrder(customerID)
+				orderID, _ := usecase.CreateOrder(ctx, customerID)
 
 				return usecase, orderID, do.ItemID(0)
 			},
@@ -136,7 +139,7 @@ func TestRemoveItem(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			usecase, orderID, itemID := tt.setup()
-			err := usecase.RemoveItem(orderID, itemID)
+			err := usecase.RemoveItem(ctx, orderID, itemID)
 			if !errors.Is(err, tt.expectedErr) {
 				t.Errorf("expected (%v), got (%v)", tt.expectedErr, err)
 			}
@@ -184,7 +187,7 @@ func NewFakeOrderRepository() *FakeOrderRepository {
 	}
 }
 
-func (r *FakeOrderRepository) Save(order *do.Order) error {
+func (r *FakeOrderRepository) Save(ctx context.Context, order *do.Order) error {
 	if order == nil {
 		return do.ErrOrderEmpty
 	}
@@ -199,7 +202,7 @@ func (r *FakeOrderRepository) Save(order *do.Order) error {
 	return nil
 }
 
-func (r *FakeOrderRepository) Update(order *do.Order) error {
+func (r *FakeOrderRepository) Update(ctx context.Context, order *do.Order) error {
 	if order == nil {
 		return do.ErrOrderEmpty
 	}
@@ -217,7 +220,7 @@ func (r *FakeOrderRepository) Update(order *do.Order) error {
 	return nil
 }
 
-func (r *FakeOrderRepository) NextID() (do.OrderID, error) {
+func (r *FakeOrderRepository) NextID(ctx context.Context) (do.OrderID, error) {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 	result := r.nextID
@@ -225,7 +228,7 @@ func (r *FakeOrderRepository) NextID() (do.OrderID, error) {
 	return result, nil
 }
 
-func (r *FakeOrderRepository) Get(id do.OrderID) (*do.Order, error) {
+func (r *FakeOrderRepository) Get(ctx context.Context, id do.OrderID) (*do.Order, error) {
 	r.mtx.RLock()
 	defer r.mtx.RUnlock()
 	order, ok := r.orders[id]
@@ -235,7 +238,7 @@ func (r *FakeOrderRepository) Get(id do.OrderID) (*do.Order, error) {
 	return order.Clone(), nil
 }
 
-func (r *FakeOrderRepository) GetAll() ([]*do.Order, error) {
+func (r *FakeOrderRepository) GetAll(ctx context.Context) ([]*do.Order, error) {
 	r.mtx.RLock()
 	defer r.mtx.RUnlock()
 	result := make([]*do.Order, 0, len(r.orders))

@@ -1,13 +1,15 @@
 package order
 
+import "context"
+
 type Repository interface {
-	Save(order *Order) error
+	Save(ctx context.Context, order *Order) error
 
-	Get(id OrderID) (*Order, error)
+	Get(ctx context.Context, id OrderID) (*Order, error)
 
-	Update(order *Order) error
+	Update(ctx context.Context, order *Order) error
 
-	NextID() (OrderID, error)
+	NextID(ctx context.Context) (OrderID, error)
 
-	GetAll() ([]*Order, error)
+	GetAll(ctx context.Context) ([]*Order, error)
 }

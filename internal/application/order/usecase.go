@@ -3,6 +3,7 @@ package order
 
 import (
 	do "Order-Management-System/internal/domain/order"
+	"context"
 )
 
 type UseCase struct {
@@ -17,25 +18,25 @@ func NewUseCase(factory *do.OrderItemFactory, repo do.Repository) *UseCase {
 	}
 }
 
-func (u *UseCase) CreateOrder(customerID do.CustomerID) (do.OrderID, error) {
-	orderID, err := u.repo.NextID()
+func (u *UseCase) CreateOrder(ctx context.Context, customerID do.CustomerID) (do.OrderID, error) {
+	orderID, err := u.repo.NextID(ctx)
 	if err != nil {
 		return 0, err
 	}
 	order := do.NewOrder(orderID, customerID)
-	err = u.repo.Save(order)
+	err = u.repo.Save(ctx, order)
 	if err != nil {
 		return 0, err
 	}
 	return orderID, nil
 }
 
-func (u *UseCase) AddItem(orderID do.OrderID, name string) (do.ItemID, error) {
+func (u *UseCase) AddItem(ctx context.Context, orderID do.OrderID, name string) (do.ItemID, error) {
 	item, err := u.itemsFactory.New(name)
 	if err != nil {
 		return do.ItemID(0), err
 	}
-	order, err := u.repo.Get(orderID)
+	order, err := u.repo.Get(ctx, orderID)
 	if err != nil {
 		return do.ItemID(0), err
 	}
@@ -43,15 +44,15 @@ func (u *UseCase) AddItem(orderID do.OrderID, name string) (do.ItemID, error) {
 	if err != nil {
 		return do.ItemID(0), err
 	}
-	err = u.repo.Update(order)
+	err = u.repo.Update(ctx, order)
 	if err != nil {
 		return do.ItemID(0), err
 	}
 	return item.ID(), nil
 }
 
-func (u *UseCase) RemoveItem(orderID do.OrderID, itemID do.ItemID) error {
-	order, err := u.repo.Get(orderID)
+func (u *UseCase) RemoveItem(ctx context.Context, orderID do.OrderID, itemID do.ItemID) error {
+	order, err := u.repo.Get(ctx, orderID)
 	if err != nil {
 		return err
 	}
@@ -59,7 +60,7 @@ func (u *UseCase) RemoveItem(orderID do.OrderID, itemID do.ItemID) error {
 	if err != nil {
 		return err
 	}
-	err = u.repo.Update(order)
+	err = u.repo.Update(ctx, order)
 	if err != nil {
 		return err
 	}
@@ -67,8 +68,8 @@ func (u *UseCase) RemoveItem(orderID do.OrderID, itemID do.ItemID) error {
 	return nil
 }
 
-func (u *UseCase) PayOrder(orderID do.OrderID) error {
-	order, err := u.repo.Get(orderID)
+func (u *UseCase) PayOrder(ctx context.Context, orderID do.OrderID) error {
+	order, err := u.repo.Get(ctx, orderID)
 	if err != nil {
 		return err
 	}
@@ -76,15 +77,15 @@ func (u *UseCase) PayOrder(orderID do.OrderID) error {
 	if err != nil {
 		return err
 	}
-	err = u.repo.Update(order)
+	err = u.repo.Update(ctx, order)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (u *UseCase) ShipOrder(orderID do.OrderID) error {
-	order, err := u.repo.Get(orderID)
+func (u *UseCase) ShipOrder(ctx context.Context, orderID do.OrderID) error {
+	order, err := u.repo.Get(ctx, orderID)
 	if err != nil {
 		return err
 	}
@@ -92,15 +93,15 @@ func (u *UseCase) ShipOrder(orderID do.OrderID) error {
 	if err != nil {
 		return err
 	}
-	err = u.repo.Update(order)
+	err = u.repo.Update(ctx, order)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (u *UseCase) CancelOrder(orderID do.OrderID) error {
-	order, err := u.repo.Get(orderID)
+func (u *UseCase) CancelOrder(ctx context.Context, orderID do.OrderID) error {
+	order, err := u.repo.Get(ctx, orderID)
 	if err != nil {
 		return err
 	}
@@ -108,15 +109,15 @@ func (u *UseCase) CancelOrder(orderID do.OrderID) error {
 	if err != nil {
 		return err
 	}
-	err = u.repo.Update(order)
+	err = u.repo.Update(ctx, order)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (u *UseCase) GetOrder(orderID do.OrderID) (OrderDTO, error) {
-	order, err := u.repo.Get(orderID)
+func (u *UseCase) GetOrder(ctx context.Context, orderID do.OrderID) (OrderDTO, error) {
+	order, err := u.repo.Get(ctx, orderID)
 	if err != nil {
 		return OrderDTO{}, err
 	}
@@ -124,8 +125,8 @@ func (u *UseCase) GetOrder(orderID do.OrderID) (OrderDTO, error) {
 	return orderDTO, nil
 }
 
-func (u *UseCase) GetOrders() ([]OrderDTO, error) {
-	orders, err := u.repo.GetAll()
+func (u *UseCase) GetOrders(ctx context.Context) ([]OrderDTO, error) {
+	orders, err := u.repo.GetAll(ctx)
 	if err != nil {
 		return nil, err
 	}
