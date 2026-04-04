@@ -1,7 +1,7 @@
 package order
 
 import (
-	do "Order-Management-System/internal/domain/order"
+	domain_order "Order-Management-System/internal/domain/order"
 	"time"
 )
 
@@ -20,7 +20,7 @@ type OrderDTO struct {
 	Total      float64
 }
 
-func ToOrderDTO(order *do.Order) OrderDTO {
+func ToOrderDTO(order *domain_order.Order) OrderDTO {
 	items := make([]OrderItemDTO, 0, len(order.Items()))
 
 	for _, item := range order.Items() {

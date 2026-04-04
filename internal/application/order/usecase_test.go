@@ -1,7 +1,7 @@
 package order
 
 import (
-	do "Order-Management-System/internal/domain/order"
+	domain_order "Order-Management-System/internal/domain/order"
 	"context"
 	"errors"
 	"sync"
@@ -10,7 +10,7 @@ import (
 
 func TestAddItem(t *testing.T) {
 	ctx := context.Background()
-	customerID, _ := do.NewCustomerID(1)
+	customerID, _ := domain_order.NewCustomerID(1)
 
 	tests := []struct {
 		name        string
@@ -22,11 +22,11 @@ func TestAddItem(t *testing.T) {
 			setup: func() *UseCase {
 				catalog := NewFakeOrderCatalog()
 				catalog.AddProduct(
-					do.Product{
+					domain_order.Product{
 						Name: "iphone",
 					},
 				)
-				factory := do.NewOrderItemFactory(catalog)
+				factory := domain_order.NewOrderItemFactory(catalog)
 				repo := NewFakeOrderRepository()
 				usecase := NewUseCase(factory, repo)
 				return usecase
@@ -38,16 +38,16 @@ func TestAddItem(t *testing.T) {
 			setup: func() *UseCase {
 				catalog := NewFakeOrderCatalog()
 				catalog.AddProduct(
-					do.Product{
+					domain_order.Product{
 						Name: "iphone X",
 					},
 				)
-				factory := do.NewOrderItemFactory(catalog)
+				factory := domain_order.NewOrderItemFactory(catalog)
 				repo := NewFakeOrderRepository()
 				usecase := NewUseCase(factory, repo)
 				return usecase
 			},
-			expectedErr: do.ErrProductNotFound,
+			expectedErr: domain_order.ErrProductNotFound,
 		},
 	}
 	for _, tt := range tests {
@@ -61,7 +61,7 @@ func TestAddItem(t *testing.T) {
 			if err == nil {
 				orderDTO, _ := usecase.GetOrder(ctx, orderID)
 				item := orderDTO.Items[0]
-				if itemID != do.ItemID(item.ID) {
+				if itemID != domain_order.ItemID(item.ID) {
 					t.Errorf("expected (%v), got (%v)", itemID, item.ID)
 				}
 			}
@@ -71,23 +71,23 @@ func TestAddItem(t *testing.T) {
 
 func TestRemoveItem(t *testing.T) {
 	ctx := context.Background()
-	customerID, _ := do.NewCustomerID(1)
+	customerID, _ := domain_order.NewCustomerID(1)
 
 	tests := []struct {
 		name        string
-		setup       func() (*UseCase, do.OrderID, do.ItemID)
+		setup       func() (*UseCase, domain_order.OrderID, domain_order.ItemID)
 		expectedErr error
 	}{
 		{
 			name: "ok",
-			setup: func() (*UseCase, do.OrderID, do.ItemID) {
+			setup: func() (*UseCase, domain_order.OrderID, domain_order.ItemID) {
 				catalog := NewFakeOrderCatalog()
 				catalog.AddProduct(
-					do.Product{
+					domain_order.Product{
 						Name: "iphone",
 					},
 				)
-				factory := do.NewOrderItemFactory(catalog)
+				factory := domain_order.NewOrderItemFactory(catalog)
 				repo := NewFakeOrderRepository()
 				usecase := NewUseCase(factory, repo)
 				orderID, _ := usecase.CreateOrder(ctx, customerID)
@@ -99,14 +99,14 @@ func TestRemoveItem(t *testing.T) {
 		},
 		{
 			name: "remove twice",
-			setup: func() (*UseCase, do.OrderID, do.ItemID) {
+			setup: func() (*UseCase, domain_order.OrderID, domain_order.ItemID) {
 				catalog := NewFakeOrderCatalog()
 				catalog.AddProduct(
-					do.Product{
+					domain_order.Product{
 						Name: "iphone",
 					},
 				)
-				factory := do.NewOrderItemFactory(catalog)
+				factory := domain_order.NewOrderItemFactory(catalog)
 				repo := NewFakeOrderRepository()
 				usecase := NewUseCase(factory, repo)
 				orderID, _ := usecase.CreateOrder(ctx, customerID)
@@ -115,25 +115,25 @@ func TestRemoveItem(t *testing.T) {
 
 				return usecase, orderID, itemID
 			},
-			expectedErr: do.ErrOrderItemNotFound,
+			expectedErr: domain_order.ErrOrderItemNotFound,
 		},
 		{
 			name: "remove from empty",
-			setup: func() (*UseCase, do.OrderID, do.ItemID) {
+			setup: func() (*UseCase, domain_order.OrderID, domain_order.ItemID) {
 				catalog := NewFakeOrderCatalog()
 				catalog.AddProduct(
-					do.Product{
+					domain_order.Product{
 						Name: "iphone",
 					},
 				)
-				factory := do.NewOrderItemFactory(catalog)
+				factory := domain_order.NewOrderItemFactory(catalog)
 				repo := NewFakeOrderRepository()
 				usecase := NewUseCase(factory, repo)
 				orderID, _ := usecase.CreateOrder(ctx, customerID)
 
-				return usecase, orderID, do.ItemID(0)
+				return usecase, orderID, domain_order.ItemID(0)
 			},
-			expectedErr: do.ErrOrderItemNotFound,
+			expectedErr: domain_order.ErrOrderItemNotFound,
 		},
 	}
 	for _, tt := range tests {
@@ -148,52 +148,52 @@ func TestRemoveItem(t *testing.T) {
 }
 
 type FakeOrderCatalog struct {
-	data map[string]do.Product
+	data map[string]domain_order.Product
 	mtx  sync.RWMutex
 }
 
 func NewFakeOrderCatalog() *FakeOrderCatalog {
 	return &FakeOrderCatalog{
-		data: make(map[string]do.Product),
+		data: make(map[string]domain_order.Product),
 	}
 }
 
-func (c *FakeOrderCatalog) GetProduct(name string) (do.Product, error) {
+func (c *FakeOrderCatalog) GetProduct(name string) (domain_order.Product, error) {
 	c.mtx.RLock()
 	defer c.mtx.RUnlock()
 	product, ok := c.data[name]
 	if !ok {
-		return do.Product{}, do.ErrProductNotFound
+		return domain_order.Product{}, domain_order.ErrProductNotFound
 	}
 	return product, nil
 }
 
-func (c *FakeOrderCatalog) AddProduct(product do.Product) {
+func (c *FakeOrderCatalog) AddProduct(product domain_order.Product) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 	c.data[product.Name] = product
 }
 
 type FakeOrderRepository struct {
-	nextID do.OrderID
-	orders map[do.OrderID]*do.Order
+	nextID domain_order.OrderID
+	orders map[domain_order.OrderID]*domain_order.Order
 	mtx    sync.RWMutex
 }
 
 func NewFakeOrderRepository() *FakeOrderRepository {
 	return &FakeOrderRepository{
 		nextID: 1,
-		orders: make(map[do.OrderID]*do.Order),
+		orders: make(map[domain_order.OrderID]*domain_order.Order),
 	}
 }
 
-func (r *FakeOrderRepository) Save(ctx context.Context, order *do.Order) error {
+func (r *FakeOrderRepository) Save(ctx context.Context, order *domain_order.Order) error {
 	if order == nil {
-		return do.ErrOrderEmpty
+		return domain_order.ErrOrderEmpty
 	}
 	orderID := order.ID()
 	if order.ID() == 0 {
-		return do.ErrInvalidID
+		return domain_order.ErrInvalidID
 	}
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
@@ -202,16 +202,16 @@ func (r *FakeOrderRepository) Save(ctx context.Context, order *do.Order) error {
 	return nil
 }
 
-func (r *FakeOrderRepository) Update(ctx context.Context, order *do.Order) error {
+func (r *FakeOrderRepository) Update(ctx context.Context, order *domain_order.Order) error {
 	if order == nil {
-		return do.ErrOrderEmpty
+		return domain_order.ErrOrderEmpty
 	}
 	orderID := order.ID()
 	if _, ok := r.orders[orderID]; !ok {
-		return do.ErrOrderNotFound
+		return domain_order.ErrOrderNotFound
 	}
 	if order.ID() == 0 {
-		return do.ErrInvalidID
+		return domain_order.ErrInvalidID
 	}
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
@@ -220,7 +220,7 @@ func (r *FakeOrderRepository) Update(ctx context.Context, order *do.Order) error
 	return nil
 }
 
-func (r *FakeOrderRepository) NextID(ctx context.Context) (do.OrderID, error) {
+func (r *FakeOrderRepository) NextID(ctx context.Context) (domain_order.OrderID, error) {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 	result := r.nextID
@@ -228,20 +228,20 @@ func (r *FakeOrderRepository) NextID(ctx context.Context) (do.OrderID, error) {
 	return result, nil
 }
 
-func (r *FakeOrderRepository) Get(ctx context.Context, id do.OrderID) (*do.Order, error) {
+func (r *FakeOrderRepository) Get(ctx context.Context, id domain_order.OrderID) (*domain_order.Order, error) {
 	r.mtx.RLock()
 	defer r.mtx.RUnlock()
 	order, ok := r.orders[id]
 	if !ok {
-		return nil, do.ErrOrderNotFound
+		return nil, domain_order.ErrOrderNotFound
 	}
 	return order.Clone(), nil
 }
 
-func (r *FakeOrderRepository) GetAll(ctx context.Context) ([]*do.Order, error) {
+func (r *FakeOrderRepository) GetAll(ctx context.Context) ([]*domain_order.Order, error) {
 	r.mtx.RLock()
 	defer r.mtx.RUnlock()
-	result := make([]*do.Order, 0, len(r.orders))
+	result := make([]*domain_order.Order, 0, len(r.orders))
 	for _, v := range r.orders {
 		result = append(result, v.Clone())
 	}

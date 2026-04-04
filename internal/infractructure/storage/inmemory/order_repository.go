@@ -2,31 +2,31 @@
 package inmemory
 
 import (
-	do "Order-Management-System/internal/domain/order"
+	domain_order "Order-Management-System/internal/domain/order"
 	"context"
 	"sync"
 )
 
 type InMemoryOrderRepository struct {
-	nextID do.OrderID
-	orders map[do.OrderID]*do.Order
+	nextID domain_order.OrderID
+	orders map[domain_order.OrderID]*domain_order.Order
 	mtx    sync.RWMutex
 }
 
 func NewInmemoryOrderRepository() *InMemoryOrderRepository {
 	return &InMemoryOrderRepository{
 		nextID: 1,
-		orders: make(map[do.OrderID]*do.Order),
+		orders: make(map[domain_order.OrderID]*domain_order.Order),
 	}
 }
 
-func (r *InMemoryOrderRepository) Save(ctx context.Context, order *do.Order) error {
+func (r *InMemoryOrderRepository) Save(ctx context.Context, order *domain_order.Order) error {
 	if order == nil {
-		return do.ErrOrderEmpty
+		return domain_order.ErrOrderEmpty
 	}
 	orderID := order.ID()
 	if order.ID() == 0 {
-		return do.ErrInvalidID
+		return domain_order.ErrInvalidID
 	}
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
@@ -35,16 +35,16 @@ func (r *InMemoryOrderRepository) Save(ctx context.Context, order *do.Order) err
 	return nil
 }
 
-func (r *InMemoryOrderRepository) Update(ctx context.Context, order *do.Order) error {
+func (r *InMemoryOrderRepository) Update(ctx context.Context, order *domain_order.Order) error {
 	if order == nil {
-		return do.ErrOrderEmpty
+		return domain_order.ErrOrderEmpty
 	}
 	orderID := order.ID()
 	if _, ok := r.orders[orderID]; !ok {
-		return do.ErrOrderNotFound
+		return domain_order.ErrOrderNotFound
 	}
 	if order.ID() == 0 {
-		return do.ErrInvalidID
+		return domain_order.ErrInvalidID
 	}
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
@@ -53,7 +53,7 @@ func (r *InMemoryOrderRepository) Update(ctx context.Context, order *do.Order) e
 	return nil
 }
 
-func (r *InMemoryOrderRepository) NextID(ctx context.Context) (do.OrderID, error) {
+func (r *InMemoryOrderRepository) NextID(ctx context.Context) (domain_order.OrderID, error) {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 	result := r.nextID
@@ -61,20 +61,20 @@ func (r *InMemoryOrderRepository) NextID(ctx context.Context) (do.OrderID, error
 	return result, nil
 }
 
-func (r *InMemoryOrderRepository) Get(ctx context.Context, id do.OrderID) (*do.Order, error) {
+func (r *InMemoryOrderRepository) Get(ctx context.Context, id domain_order.OrderID) (*domain_order.Order, error) {
 	r.mtx.RLock()
 	defer r.mtx.RUnlock()
 	order, ok := r.orders[id]
 	if !ok {
-		return nil, do.ErrOrderNotFound
+		return nil, domain_order.ErrOrderNotFound
 	}
 	return order.Clone(), nil
 }
 
-func (r *InMemoryOrderRepository) GetAll(ctx context.Context) ([]*do.Order, error) {
+func (r *InMemoryOrderRepository) GetAll(ctx context.Context) ([]*domain_order.Order, error) {
 	r.mtx.RLock()
 	defer r.mtx.RUnlock()
-	result := make([]*do.Order, 0, len(r.orders))
+	result := make([]*domain_order.Order, 0, len(r.orders))
 	for _, v := range r.orders {
 		result = append(result, v.Clone())
 	}
