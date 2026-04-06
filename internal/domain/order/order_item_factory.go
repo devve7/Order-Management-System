@@ -23,9 +23,10 @@ func (f *OrderItemFactory) New(name string) (*OrderItem, error) {
 
 	f.mtx.Lock()
 	item := &OrderItem{
-		id:    f.nextID,
-		name:  product.Name,
-		price: product.Price,
+		id:        f.nextID,
+		productID: product.ID,
+		name:      product.Name,
+		price:     product.Price,
 	}
 	f.nextID++
 	f.mtx.Unlock()
