@@ -8,9 +8,10 @@ var (
 	ErrOrderShipped   = errors.New("order is shipped")
 	ErrOrderCancelled = errors.New("order is cancelled")
 
-	ErrInvalidStatus = errors.New("invalid status")
-	ErrInvalidPrice  = errors.New("invalid price")
-	ErrInvalidID     = errors.New("id cannot be negative")
+	ErrInvalidStatus   = errors.New("invalid status")
+	ErrInvalidPrice    = errors.New("invalid price")
+	ErrInvalidID       = errors.New("id cannot be negative")
+	ErrInvalidQuantity = errors.New("invalid quantity")
 
 	ErrCannotShip   = errors.New("cannot ship")
 	ErrCannotPay    = errors.New("cannot pay")

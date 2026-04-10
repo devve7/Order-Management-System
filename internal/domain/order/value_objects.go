@@ -44,3 +44,21 @@ func NewPrice(amount float64) (Price, error) {
 	}
 	return Price(amount), nil
 }
+
+type Quantity int64
+
+func NewQuantity(q int64) (Quantity, error) {
+	if q < 0 {
+		return 0, ErrInvalidQuantity
+	}
+	return Quantity(q), nil
+}
+
+type ItemName string
+
+func NewItemName(s string) (ItemName, error) {
+	if s == "" {
+		return "", ErrInvalidItemName
+	}
+	return ItemName(s), nil
+}
