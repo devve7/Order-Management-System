@@ -15,8 +15,8 @@ func NewOrderItemFactory(catalog ProductCatalog) *OrderItemFactory {
 	}
 }
 
-func (f *OrderItemFactory) New(name string) (*OrderItem, error) {
-	product, err := f.catalog.GetProduct(name)
+func (f *OrderItemFactory) New(productID ProductID, quantity int64) (*OrderItem, error) {
+	product, err := f.catalog.GetProduct(productID)
 	if err != nil {
 		return nil, err
 	}
@@ -27,6 +27,7 @@ func (f *OrderItemFactory) New(name string) (*OrderItem, error) {
 		productID: product.ID,
 		name:      product.Name,
 		price:     product.Price,
+		quantity:  quantity,
 	}
 	f.nextID++
 	f.mtx.Unlock()
@@ -34,7 +35,7 @@ func (f *OrderItemFactory) New(name string) (*OrderItem, error) {
 }
 
 type ProductCatalog interface {
-	GetProduct(name string) (Product, error)
+	GetProduct(productID ProductID) (Product, error)
 }
 
 type Product struct {

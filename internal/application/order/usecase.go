@@ -30,8 +30,8 @@ func (u *UseCase) CreateOrder(ctx context.Context, customerID domain_order.Custo
 	return orderID, nil
 }
 
-func (u *UseCase) AddItem(ctx context.Context, orderID domain_order.OrderID, name string) (domain_order.ItemID, error) {
-	item, err := u.itemsFactory.New(name)
+func (u *UseCase) AddItem(ctx context.Context, orderID domain_order.OrderID, productID domain_order.ProductID, quantity int64) (domain_order.ItemID, error) {
+	item, err := u.itemsFactory.New(productID, quantity)
 	if err != nil {
 		return domain_order.ItemID(0), err
 	}

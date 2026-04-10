@@ -7,8 +7,8 @@ import (
 
 type TestCatalog struct{}
 
-func (c *TestCatalog) GetProduct(name string) (Product, error) {
-	if name == "test" {
+func (c *TestCatalog) GetProduct(productID ProductID) (Product, error) {
+	if productID == 1 {
 		return Product{
 			ID:    1,
 			Name:  "test",
@@ -23,24 +23,24 @@ func TestOrderItemFactory(t *testing.T) {
 	var catalog TestCatalog
 	factory := NewOrderItemFactory(&catalog)
 	tests := []struct {
-		name          string
-		orderItemName string
-		expectedErr   error
+		name               string
+		orderItemProductID int
+		expectedErr        error
 	}{
 		{
-			name:          "ok",
-			orderItemName: "test",
-			expectedErr:   nil,
+			name:               "ok",
+			orderItemProductID: 1,
+			expectedErr:        nil,
 		},
 		{
-			name:          "not found",
-			orderItemName: "unknonw",
-			expectedErr:   ErrOrderItemNotFound,
+			name:               "not found",
+			orderItemProductID: 2,
+			expectedErr:        ErrOrderItemNotFound,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := factory.New(tt.orderItemName)
+			_, err := factory.New(ProductID(tt.orderItemProductID), 1)
 			if !errors.Is(err, tt.expectedErr) {
 				t.Errorf("expected (%v), got (%v)", tt.expectedErr, err)
 			}

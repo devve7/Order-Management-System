@@ -7,20 +7,20 @@ import (
 )
 
 type InMemoryOrderCatalog struct {
-	data map[string]domain_order.Product
+	data map[domain_order.ProductID]domain_order.Product
 	mtx  sync.RWMutex
 }
 
 func NewInMemoryOrderCatalog() *InMemoryOrderCatalog {
 	return &InMemoryOrderCatalog{
-		data: make(map[string]domain_order.Product),
+		data: make(map[domain_order.ProductID]domain_order.Product),
 	}
 }
 
-func (c *InMemoryOrderCatalog) GetProduct(name string) (domain_order.Product, error) {
+func (c *InMemoryOrderCatalog) GetProduct(productID domain_order.ProductID) (domain_order.Product, error) {
 	c.mtx.RLock()
 	defer c.mtx.RUnlock()
-	product, ok := c.data[name]
+	product, ok := c.data[productID]
 	if !ok {
 		return domain_order.Product{}, domain_order.ErrProductNotFound
 	}
@@ -30,5 +30,5 @@ func (c *InMemoryOrderCatalog) GetProduct(name string) (domain_order.Product, er
 func (c *InMemoryOrderCatalog) AddProduct(product domain_order.Product) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
-	c.data[product.Name] = product
+	c.data[product.ID] = product
 }

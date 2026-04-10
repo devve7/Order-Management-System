@@ -10,6 +10,7 @@ type OrderItemDTO struct {
 	ProductID int64
 	Name      string
 	Price     float64
+	Quantity  int64
 }
 
 type OrderDTO struct {
@@ -30,6 +31,7 @@ func ToOrderDTO(order *domain_order.Order) OrderDTO {
 			ProductID: int64(item.ProductID()),
 			Name:      item.Name(),
 			Price:     float64(item.Price()),
+			Quantity:  item.Quantity(),
 		})
 	}
 

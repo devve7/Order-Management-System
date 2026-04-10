@@ -366,9 +366,10 @@ func TestTotal(t *testing.T) {
 			setup: func() *Order {
 				order := NewOrder(orderID, customerID, "created", time.Now())
 				item := &OrderItem{
-					id:    2,
-					name:  "item",
-					price: 100,
+					id:       2,
+					name:     "item",
+					price:    100,
+					quantity: 1,
 				}
 				order.AddItem(item)
 				return order
@@ -380,20 +381,22 @@ func TestTotal(t *testing.T) {
 			setup: func() *Order {
 				order := NewOrder(orderID, customerID, "created", time.Now())
 				item := &OrderItem{
-					id:    1,
-					name:  "item",
-					price: 100,
+					id:       1,
+					name:     "item",
+					price:    100,
+					quantity: 1,
 				}
 				item2 := &OrderItem{
-					id:    2,
-					name:  "item",
-					price: 100,
+					id:       2,
+					name:     "item",
+					price:    100,
+					quantity: 3,
 				}
 				order.AddItem(item)
 				order.AddItem(item2)
 				return order
 			},
-			expected: 200,
+			expected: 400,
 		},
 		{
 			name: "ok",

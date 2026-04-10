@@ -153,12 +153,20 @@ func (h *Handler) GetOrders(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) AddItem(w http.ResponseWriter, r *http.Request) {
-	var req NameDTO
+	var req NewOrderItemDTO
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
 
 	if err := decoder.Decode(&req); err != nil {
 		h.writeError(w, err, http.StatusBadRequest)
+		return
+	}
+	if req.ProductID == nil {
+		h.writeError(w, errors.New("product_id is required"), http.StatusBadRequest)
+		return
+	}
+	if req.Quantity == nil {
+		h.writeError(w, errors.New("quantity is required"), http.StatusBadRequest)
 		return
 	}
 	reqOrderIDString := mux.Vars(r)["id"]
@@ -167,8 +175,9 @@ func (h *Handler) AddItem(w http.ResponseWriter, r *http.Request) {
 		h.writeError(w, err, http.StatusBadRequest)
 		return
 	}
-	if req.Name == "" {
-		h.writeError(w, errors.New("name is required"), http.StatusBadRequest)
+	productID, err := domain_order.NewProductID(*req.ProductID)
+	if err != nil {
+		h.writeError(w, err, http.StatusBadRequest)
 		return
 	}
 	orderID, err := domain_order.NewOrderID(reqOrderID)
@@ -177,7 +186,7 @@ func (h *Handler) AddItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ctx := r.Context()
-	orderItemID, err := h.usecase.AddItem(ctx, orderID, req.Name)
+	orderItemID, err := h.usecase.AddItem(ctx, orderID, productID, *req.Quantity)
 	if err != nil {
 		h.writeError(w, err, mapError(err))
 		return

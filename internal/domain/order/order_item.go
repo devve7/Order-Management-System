@@ -5,7 +5,7 @@ type OrderItem struct {
 	productID ProductID
 	name      string
 	price     Price
-	quantity  int32
+	quantity  int64
 }
 
 func (i OrderItem) ID() ItemID {
@@ -24,6 +24,6 @@ func (i OrderItem) Price() Price {
 	return i.price
 }
 
-func (i OrderItem) Quantity() int32 {
+func (i OrderItem) Quantity() int64 {
 	return i.quantity
 }

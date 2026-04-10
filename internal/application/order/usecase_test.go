@@ -24,7 +24,7 @@ func TestAddItem(t *testing.T) {
 				catalog := NewFakeOrderCatalog()
 				catalog.AddProduct(
 					domain_order.Product{
-						Name: "iphone",
+						ID: 1,
 					},
 				)
 				factory := domain_order.NewOrderItemFactory(catalog)
@@ -40,7 +40,7 @@ func TestAddItem(t *testing.T) {
 				catalog := NewFakeOrderCatalog()
 				catalog.AddProduct(
 					domain_order.Product{
-						Name: "iphone X",
+						ID: 2,
 					},
 				)
 				factory := domain_order.NewOrderItemFactory(catalog)
@@ -55,7 +55,7 @@ func TestAddItem(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			usecase := tt.setup()
 			orderID, _ := usecase.CreateOrder(ctx, customerID)
-			itemID, err := usecase.AddItem(ctx, orderID, "iphone")
+			itemID, err := usecase.AddItem(ctx, orderID, 1, 1)
 			if !errors.Is(err, tt.expectedErr) {
 				t.Errorf("expected (%v), got (%v)", tt.expectedErr, err)
 			}
@@ -85,14 +85,14 @@ func TestRemoveItem(t *testing.T) {
 				catalog := NewFakeOrderCatalog()
 				catalog.AddProduct(
 					domain_order.Product{
-						Name: "iphone",
+						ID: 1,
 					},
 				)
 				factory := domain_order.NewOrderItemFactory(catalog)
 				repo := NewFakeOrderRepository()
 				usecase := NewUseCase(factory, repo)
 				orderID, _ := usecase.CreateOrder(ctx, customerID)
-				itemID, _ := usecase.AddItem(ctx, orderID, "iphone")
+				itemID, _ := usecase.AddItem(ctx, orderID, 1, 1)
 
 				return usecase, orderID, itemID
 			},
@@ -104,14 +104,14 @@ func TestRemoveItem(t *testing.T) {
 				catalog := NewFakeOrderCatalog()
 				catalog.AddProduct(
 					domain_order.Product{
-						Name: "iphone",
+						ID: 1,
 					},
 				)
 				factory := domain_order.NewOrderItemFactory(catalog)
 				repo := NewFakeOrderRepository()
 				usecase := NewUseCase(factory, repo)
 				orderID, _ := usecase.CreateOrder(ctx, customerID)
-				itemID, _ := usecase.AddItem(ctx, orderID, "iphone")
+				itemID, _ := usecase.AddItem(ctx, orderID, 1, 1)
 				usecase.RemoveItem(ctx, orderID, itemID)
 
 				return usecase, orderID, itemID
@@ -124,7 +124,7 @@ func TestRemoveItem(t *testing.T) {
 				catalog := NewFakeOrderCatalog()
 				catalog.AddProduct(
 					domain_order.Product{
-						Name: "iphone",
+						ID: 1,
 					},
 				)
 				factory := domain_order.NewOrderItemFactory(catalog)
@@ -149,20 +149,20 @@ func TestRemoveItem(t *testing.T) {
 }
 
 type FakeOrderCatalog struct {
-	data map[string]domain_order.Product
+	data map[domain_order.ProductID]domain_order.Product
 	mtx  sync.RWMutex
 }
 
 func NewFakeOrderCatalog() *FakeOrderCatalog {
 	return &FakeOrderCatalog{
-		data: make(map[string]domain_order.Product),
+		data: make(map[domain_order.ProductID]domain_order.Product),
 	}
 }
 
-func (c *FakeOrderCatalog) GetProduct(name string) (domain_order.Product, error) {
+func (c *FakeOrderCatalog) GetProduct(productID domain_order.ProductID) (domain_order.Product, error) {
 	c.mtx.RLock()
 	defer c.mtx.RUnlock()
-	product, ok := c.data[name]
+	product, ok := c.data[productID]
 	if !ok {
 		return domain_order.Product{}, domain_order.ErrProductNotFound
 	}
@@ -172,7 +172,7 @@ func (c *FakeOrderCatalog) GetProduct(name string) (domain_order.Product, error)
 func (c *FakeOrderCatalog) AddProduct(product domain_order.Product) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
-	c.data[product.Name] = product
+	c.data[product.ID] = product
 }
 
 type FakeOrderRepository struct {

@@ -9,9 +9,10 @@ type ErrorResponse struct {
 }
 
 type OrderItemDTO struct {
-	ID    int64   `json:"order_item_id"`
-	Name  string  `json:"name"`
-	Price float64 `json:"price"`
+	ID       int64   `json:"order_item_id"`
+	Name     string  `json:"name"`
+	Price    float64 `json:"price"`
+	Quantity int64   `json:"quantity"`
 }
 
 type OrderDTO struct {
@@ -28,9 +29,10 @@ func ToOrderDTO(orderDTO *application_order.OrderDTO) OrderDTO {
 
 	for _, item := range orderDTO.Items {
 		items = append(items, OrderItemDTO{
-			ID:    int64(item.ID),
-			Name:  item.Name,
-			Price: float64(item.Price),
+			ID:       int64(item.ID),
+			Name:     item.Name,
+			Price:    float64(item.Price),
+			Quantity: item.Quantity,
 		})
 	}
 
@@ -52,8 +54,9 @@ type OrderIDDTO struct {
 	OrderID int64 `json:"order_id"`
 }
 
-type NameDTO struct {
-	Name string `json:"name"`
+type NewOrderItemDTO struct {
+	ProductID *int64 `json:"product_id"`
+	Quantity  *int64 `json:"quantity"`
 }
 
 type OrderItemIDDTO struct {
