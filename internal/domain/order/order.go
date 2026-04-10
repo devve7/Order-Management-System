@@ -13,14 +13,13 @@ type Order struct {
 	createdAt  time.Time
 }
 
-func NewOrder(id OrderID, customerID CustomerID) *Order {
-	status := StatusCreated
+func NewOrder(id OrderID, customerID CustomerID, status OrderStatus, time time.Time) *Order {
 	return &Order{
 		id:         id,
 		customerID: customerID,
 		items:      make([]*OrderItem, 0),
 		status:     status,
-		createdAt:  time.Now(),
+		createdAt:  time,
 	}
 }
 
@@ -91,7 +90,7 @@ func (o *Order) Total() Price {
 	}
 	var total float64 = 0
 	for _, item := range o.items {
-		total += float64(item.price)
+		total += float64(item.Price()) * float64(item.Quantity())
 	}
 	price, _ := NewPrice(total)
 	return price

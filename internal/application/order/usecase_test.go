@@ -6,6 +6,7 @@ import (
 	"errors"
 	"sync"
 	"testing"
+	"time"
 )
 
 func TestAddItem(t *testing.T) {
@@ -187,25 +188,22 @@ func NewFakeOrderRepository() *FakeOrderRepository {
 	}
 }
 
-func (r *FakeOrderRepository) Save(ctx context.Context, order *domain_order.Order) error {
-	if order == nil {
-		return domain_order.ErrOrderEmpty
-	}
-	orderID := order.ID()
-	if order.ID() == 0 {
-		return domain_order.ErrInvalidID
-	}
+func (r *FakeOrderRepository) Create(ctx context.Context, customerID domain_order.CustomerID, status domain_order.OrderStatus) (domain_order.OrderID, error) {
+	orderID := r.GetNextID()
+	order := domain_order.NewOrder(orderID, customerID, status, time.Now())
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 	r.orders[orderID] = order
 
-	return nil
+	return orderID, nil
 }
 
 func (r *FakeOrderRepository) Update(ctx context.Context, order *domain_order.Order) error {
 	if order == nil {
 		return domain_order.ErrOrderEmpty
 	}
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
 	orderID := order.ID()
 	if _, ok := r.orders[orderID]; !ok {
 		return domain_order.ErrOrderNotFound
@@ -213,19 +211,17 @@ func (r *FakeOrderRepository) Update(ctx context.Context, order *domain_order.Or
 	if order.ID() == 0 {
 		return domain_order.ErrInvalidID
 	}
-	r.mtx.Lock()
-	defer r.mtx.Unlock()
 	r.orders[orderID] = order
 
 	return nil
 }
 
-func (r *FakeOrderRepository) NextID(ctx context.Context) (domain_order.OrderID, error) {
+func (r *FakeOrderRepository) GetNextID() domain_order.OrderID {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 	result := r.nextID
 	r.nextID += 1
-	return result, nil
+	return result
 }
 
 func (r *FakeOrderRepository) Get(ctx context.Context, id domain_order.OrderID) (*domain_order.Order, error) {

@@ -5,6 +5,7 @@ type OrderItem struct {
 	productID ProductID
 	name      string
 	price     Price
+	quantity  int32
 }
 
 func (i OrderItem) ID() ItemID {
@@ -21,4 +22,8 @@ func (i OrderItem) Name() string {
 
 func (i OrderItem) Price() Price {
 	return i.price
+}
+
+func (i OrderItem) Quantity() int32 {
+	return i.quantity
 }

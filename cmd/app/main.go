@@ -53,7 +53,7 @@ func main() {
 	server := transport_http.NewServer(":9091", router, logger)
 	go func() {
 		if err := server.Start(); err != nil {
-			logger.Printf("server error: %v", err)
+			logger.Errorf("server error: %v", err)
 		}
 	}()
 	quit := make(chan os.Signal, 1)
@@ -66,7 +66,7 @@ func main() {
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
-		logger.Printf("graceful shutdown failed: %v", err)
+		logger.Errorf("graceful shutdown failed: %v", err)
 	} else {
 		logger.Println("server stopped gracefully")
 	}

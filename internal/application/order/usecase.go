@@ -19,12 +19,11 @@ func NewUseCase(factory *domain_order.OrderItemFactory, repo domain_order.Reposi
 }
 
 func (u *UseCase) CreateOrder(ctx context.Context, customerID domain_order.CustomerID) (domain_order.OrderID, error) {
-	orderID, err := u.repo.NextID(ctx)
+	status, err := domain_order.NewOrderStatus("created")
 	if err != nil {
 		return 0, err
 	}
-	order := domain_order.NewOrder(orderID, customerID)
-	err = u.repo.Save(ctx, order)
+	orderID, err := u.repo.Create(ctx, customerID, status)
 	if err != nil {
 		return 0, err
 	}
