@@ -3,6 +3,7 @@ package http
 
 import (
 	application_order "Order-Management-System/internal/application/order"
+	application_product "Order-Management-System/internal/application/product"
 	domain_order "Order-Management-System/internal/domain/order"
 	"encoding/json"
 	"errors"
@@ -27,12 +28,14 @@ func mapError(err error) int {
 	switch {
 	case errors.Is(err, domain_order.ErrInvalidID),
 		errors.Is(err, domain_order.ErrInvalidPrice),
+		errors.Is(err, domain_order.ErrInvalidProductName),
+		errors.Is(err, domain_order.ErrInvalidQuantity),
 		errors.Is(err, domain_order.ErrInvalidStatus):
 		return http.StatusBadRequest
 
 	case errors.Is(err, domain_order.ErrOrderNotFound),
-		errors.Is(err, domain_order.ErrProductNotFound),
-		errors.Is(err, domain_order.ErrOrderItemNotFound):
+		errors.Is(err, domain_order.ErrOrderItemNotFound),
+		errors.Is(err, application_product.ErrProductNotFound):
 		return http.StatusNotFound
 
 	case errors.Is(err, domain_order.ErrCannotPay),
@@ -40,7 +43,8 @@ func mapError(err error) int {
 		errors.Is(err, domain_order.ErrCannotCancel),
 		errors.Is(err, domain_order.ErrOrderCancelled),
 		errors.Is(err, domain_order.ErrOrderShipped),
-		errors.Is(err, domain_order.ErrOrderEmpty):
+		errors.Is(err, domain_order.ErrOrderEmpty),
+		errors.Is(err, application_product.ErrInsufficientStock):
 		return http.StatusConflict
 
 	default:
@@ -180,27 +184,25 @@ func (h *Handler) AddItem(w http.ResponseWriter, r *http.Request) {
 		h.writeError(w, err, http.StatusBadRequest)
 		return
 	}
+	quantity, err := domain_order.NewQuantity(*req.Quantity)
+	if err != nil {
+		h.writeError(w, err, http.StatusBadRequest)
+		return
+	}
 	orderID, err := domain_order.NewOrderID(reqOrderID)
 	if err != nil {
 		h.writeError(w, err, mapError(err))
 		return
 	}
 	ctx := r.Context()
-	orderItemID, err := h.usecase.AddItem(ctx, orderID, productID, *req.Quantity)
+	err = h.usecase.AddItem(ctx, orderID, productID, quantity)
 	if err != nil {
 		h.writeError(w, err, mapError(err))
 		return
 	}
-	resp := OrderItemIDDTO{
-		OrderItemID: int64(orderItemID),
-	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		log.Printf("failed to write add item response: %v", err)
-	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *Handler) DeleteItem(w http.ResponseWriter, r *http.Request) {

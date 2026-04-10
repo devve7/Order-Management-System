@@ -3,12 +3,12 @@ package order
 type OrderItem struct {
 	id        ItemID
 	productID ProductID
-	name      ItemName
+	name      ProductName
 	price     Price
 	quantity  Quantity
 }
 
-func NewOrderItem(productID ProductID, name ItemName, price Price, quantity Quantity) (*OrderItem, error) {
+func NewOrderItem(productID ProductID, name ProductName, price Price, quantity Quantity) (*OrderItem, error) {
 	return &OrderItem{
 		id:        0,
 		productID: productID,
@@ -17,7 +17,7 @@ func NewOrderItem(productID ProductID, name ItemName, price Price, quantity Quan
 		quantity:  quantity,
 	}, nil
 }
-func RestoreOrderItem(id ItemID, productID ProductID, name ItemName, price Price, quantity Quantity) (*OrderItem, error) {
+func RestoreOrderItem(id ItemID, productID ProductID, name ProductName, price Price, quantity Quantity) (*OrderItem, error) {
 	return &OrderItem{
 		id:        id,
 		productID: productID,
@@ -39,7 +39,7 @@ func (i OrderItem) ProductID() ProductID {
 	return i.productID
 }
 
-func (i OrderItem) Name() ItemName {
+func (i OrderItem) Name() ProductName {
 	return i.name
 }
 

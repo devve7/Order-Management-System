@@ -9,10 +9,11 @@ type ErrorResponse struct {
 }
 
 type OrderItemDTO struct {
-	ID       int64   `json:"order_item_id"`
-	Name     string  `json:"name"`
-	Price    float64 `json:"price"`
-	Quantity int64   `json:"quantity"`
+	ID        int64   `json:"order_item_id"`
+	ProductID int64   `json:"product_id"`
+	Name      string  `json:"name"`
+	Price     float64 `json:"price"`
+	Quantity  int64   `json:"quantity"`
 }
 
 type OrderDTO struct {
@@ -29,20 +30,21 @@ func ToOrderDTO(orderDTO *application_order.OrderDTO) OrderDTO {
 
 	for _, item := range orderDTO.Items {
 		items = append(items, OrderItemDTO{
-			ID:       int64(item.ID),
-			Name:     item.Name,
-			Price:    float64(item.Price),
-			Quantity: item.Quantity,
+			ID:        item.ID,
+			ProductID: item.ProductID,
+			Name:      item.Name,
+			Price:     item.Price,
+			Quantity:  item.Quantity,
 		})
 	}
 
 	return OrderDTO{
-		ID:         int64(orderDTO.ID),
-		CustomerID: int64(orderDTO.CustomerID),
-		Status:     string(orderDTO.Status),
+		ID:         orderDTO.ID,
+		CustomerID: orderDTO.CustomerID,
+		Status:     orderDTO.Status,
 		CreatedAt:  orderDTO.CreatedAt.Format("2006-01-02 15:04:05"),
 		Items:      items,
-		Total:      float64(orderDTO.Total),
+		Total:      orderDTO.Total,
 	}
 }
 
@@ -57,8 +59,4 @@ type OrderIDDTO struct {
 type NewOrderItemDTO struct {
 	ProductID *int64 `json:"product_id"`
 	Quantity  *int64 `json:"quantity"`
-}
-
-type OrderItemIDDTO struct {
-	OrderItemID int64 `json:"order_item_id"`
 }

@@ -77,7 +77,7 @@ func (o *Order) Ship() error {
 }
 
 func (o *Order) Cancel() error {
-	if o.status == StatusShipped {
+	if o.status == StatusShipped || o.status == StatusCancelled {
 		return ErrCannotCancel
 	}
 	o.status = StatusCancelled

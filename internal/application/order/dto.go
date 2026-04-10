@@ -29,9 +29,9 @@ func ToOrderDTO(order *domain_order.Order) OrderDTO {
 		items = append(items, OrderItemDTO{
 			ID:        int64(item.ID()),
 			ProductID: int64(item.ProductID()),
-			Name:      item.Name(),
+			Name:      string(item.Name()),
 			Price:     float64(item.Price()),
-			Quantity:  item.Quantity(),
+			Quantity:  int64(item.Quantity()),
 		})
 	}
 
