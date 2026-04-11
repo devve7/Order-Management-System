@@ -46,6 +46,9 @@ func (o *Order) AddItem(productID ProductID, name ProductName, price Price, quan
 	if o.status == StatusShipped {
 		return ErrOrderShipped
 	}
+	if o.status == StatusPaid {
+		return ErrOrderPaid
+	}
 
 	itemID := o.getNextItemID()
 	item := NewOrderItem(itemID, productID, name, price, quantity)
@@ -77,7 +80,7 @@ func (o *Order) Pay() error {
 	if len(o.items) == 0 {
 		return ErrOrderEmpty
 	}
-	if o.status == StatusCreated {
+	if o.status == StatusCreated && o.status != StatusCancelled {
 		o.status = StatusPaid
 		return nil
 	}
@@ -151,6 +154,10 @@ func (o *Order) Items() []*OrderItem {
 
 func (o *Order) CreatedAt() time.Time {
 	return o.createdAt
+}
+
+func (o *Order) NextItemID() ItemID {
+	return o.nextItemID
 }
 
 func (o *Order) getNextItemID() ItemID {

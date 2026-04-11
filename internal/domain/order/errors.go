@@ -7,6 +7,7 @@ var (
 	ErrOrderEmpty     = errors.New("order is empty")
 	ErrOrderShipped   = errors.New("order is shipped")
 	ErrOrderCancelled = errors.New("order is cancelled")
+	ErrOrderPaid      = errors.New("order is paid")
 
 	ErrInvalidStatus       = errors.New("invalid status")
 	ErrInvalidPrice        = errors.New("invalid price")

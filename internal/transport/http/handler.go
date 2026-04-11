@@ -43,6 +43,7 @@ func mapError(err error) int {
 	case errors.Is(err, domain_order.ErrCannotPay),
 		errors.Is(err, domain_order.ErrCannotShip),
 		errors.Is(err, domain_order.ErrCannotCancel),
+		errors.Is(err, domain_order.ErrOrderPaid),
 		errors.Is(err, domain_order.ErrOrderCancelled),
 		errors.Is(err, domain_order.ErrOrderShipped),
 		errors.Is(err, domain_order.ErrOrderEmpty),
