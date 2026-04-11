@@ -30,23 +30,14 @@ func LoggingMiddleWare(logger *logrus.Logger) mux.MiddlewareFunc {
 
 			next.ServeHTTP(recorder, r)
 
-			fields := logrus.Fields{
+			logger.WithFields(logrus.Fields{
 				"method":      r.Method,
 				"uri":         r.RequestURI,
 				"remote_addr": r.RemoteAddr,
 				"user_agent":  r.UserAgent(),
 				"duration":    time.Since(start).String(),
 				"status":      recorder.statusCode,
-			}
-
-			switch {
-			case recorder.statusCode >= 500:
-				logger.WithFields(fields).Error("HTTP request completed with error")
-			case recorder.statusCode >= 400:
-				logger.WithFields(fields).Warn("HTTP request completed with client error")
-			default:
-				logger.WithFields(fields).Info("HTTP request completed")
-			}
+			}).Info("HTTP request completed")
 		})
 	}
 }

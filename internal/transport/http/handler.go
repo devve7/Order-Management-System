@@ -7,20 +7,22 @@ import (
 	domain_order "Order-Management-System/internal/domain/order"
 	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 )
 
 type Handler struct {
 	usecase *application_order.UseCase
+	logger  *logrus.Logger
 }
 
-func NewHandler(usecase *application_order.UseCase) *Handler {
+func NewHandler(usecase *application_order.UseCase, logger *logrus.Logger) *Handler {
 	return &Handler{
 		usecase: usecase,
+		logger:  logger,
 	}
 }
 
@@ -53,7 +55,21 @@ func mapError(err error) int {
 	}
 }
 
-func (h *Handler) writeError(w http.ResponseWriter, err error, status int) {
+func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error, status int) {
+	entry := h.logger.WithFields(logrus.Fields{
+		"method":      r.Method,
+		"uri":         r.RequestURI,
+		"remote_addr": r.RemoteAddr,
+		"user_agent":  r.UserAgent(),
+		"status":      status,
+	}).WithError(err)
+
+	if status >= 500 {
+		entry.Error("request failed")
+	} else {
+		entry.Warn("request failed")
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 
@@ -66,7 +82,7 @@ func (h *Handler) writeError(w http.ResponseWriter, err error, status int) {
 	}
 
 	if encErr := json.NewEncoder(w).Encode(resp); encErr != nil {
-		log.Printf("failed to write error response: %v", encErr)
+		h.logger.WithError(err).Error("failed to write error response")
 	}
 }
 
@@ -76,24 +92,24 @@ func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	decoder.DisallowUnknownFields()
 
 	if err := decoder.Decode(&req); err != nil {
-		h.writeError(w, err, http.StatusBadRequest)
+		h.writeError(w, r, err, http.StatusBadRequest)
 		return
 	}
 
 	if req.CustomerID == nil {
-		h.writeError(w, errors.New("customer_id is required"), http.StatusBadRequest)
+		h.writeError(w, r, errors.New("customer_id is required"), http.StatusBadRequest)
 		return
 	}
 
 	customerID, err := domain_order.NewCustomerID(*req.CustomerID)
 	if err != nil {
-		h.writeError(w, err, mapError(err))
+		h.writeError(w, r, err, mapError(err))
 		return
 	}
 	ctx := r.Context()
 	orderID, err := h.usecase.CreateOrder(ctx, customerID)
 	if err != nil {
-		h.writeError(w, err, mapError(err))
+		h.writeError(w, r, err, mapError(err))
 		return
 	}
 
@@ -105,7 +121,7 @@ func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		log.Printf("failed to write create order response: %v", err)
+		h.logger.WithError(err).Error("failed to write create order response")
 	}
 }
 
@@ -113,18 +129,18 @@ func (h *Handler) GetOrder(w http.ResponseWriter, r *http.Request) {
 	reqOrderIDString := mux.Vars(r)["id"]
 	reqOrderID, err := strconv.ParseInt(reqOrderIDString, 10, 64)
 	if err != nil {
-		h.writeError(w, err, http.StatusBadRequest)
+		h.writeError(w, r, err, http.StatusBadRequest)
 		return
 	}
 	orderID, err := domain_order.NewOrderID(reqOrderID)
 	if err != nil {
-		h.writeError(w, err, mapError(err))
+		h.writeError(w, r, err, mapError(err))
 		return
 	}
 	ctx := r.Context()
 	order, err := h.usecase.GetOrder(ctx, orderID)
 	if err != nil {
-		h.writeError(w, err, mapError(err))
+		h.writeError(w, r, err, mapError(err))
 		return
 	}
 	resp := ToOrderDTO(&order)
@@ -132,7 +148,7 @@ func (h *Handler) GetOrder(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		log.Printf("failed to write get order response: %v", err)
+		h.logger.WithError(err).Error("failed to write get order response")
 	}
 }
 
@@ -140,7 +156,7 @@ func (h *Handler) GetOrders(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	orders, err := h.usecase.GetOrders(ctx)
 	if err != nil {
-		h.writeError(w, err, mapError(err))
+		h.writeError(w, r, err, mapError(err))
 		return
 	}
 	ordersDTO := make([]OrderDTO, 0, len(orders))
@@ -153,7 +169,7 @@ func (h *Handler) GetOrders(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	if err := json.NewEncoder(w).Encode(ordersDTO); err != nil {
-		log.Printf("failed to write get order response: %v", err)
+		h.logger.WithError(err).Error("failed to write get orders response")
 	}
 }
 
@@ -163,42 +179,42 @@ func (h *Handler) AddItem(w http.ResponseWriter, r *http.Request) {
 	decoder.DisallowUnknownFields()
 
 	if err := decoder.Decode(&req); err != nil {
-		h.writeError(w, err, http.StatusBadRequest)
+		h.writeError(w, r, err, http.StatusBadRequest)
 		return
 	}
 	if req.ProductID == nil {
-		h.writeError(w, errors.New("product_id is required"), http.StatusBadRequest)
+		h.writeError(w, r, errors.New("product_id is required"), http.StatusBadRequest)
 		return
 	}
 	if req.Quantity == nil {
-		h.writeError(w, errors.New("quantity is required"), http.StatusBadRequest)
+		h.writeError(w, r, errors.New("quantity is required"), http.StatusBadRequest)
 		return
 	}
 	reqOrderIDString := mux.Vars(r)["id"]
 	reqOrderID, err := strconv.ParseInt(reqOrderIDString, 10, 64)
 	if err != nil {
-		h.writeError(w, err, http.StatusBadRequest)
+		h.writeError(w, r, err, http.StatusBadRequest)
 		return
 	}
 	productID, err := domain_order.NewProductID(*req.ProductID)
 	if err != nil {
-		h.writeError(w, err, http.StatusBadRequest)
+		h.writeError(w, r, err, http.StatusBadRequest)
 		return
 	}
 	quantity, err := domain_order.NewQuantity(*req.Quantity)
 	if err != nil {
-		h.writeError(w, err, http.StatusBadRequest)
+		h.writeError(w, r, err, http.StatusBadRequest)
 		return
 	}
 	orderID, err := domain_order.NewOrderID(reqOrderID)
 	if err != nil {
-		h.writeError(w, err, mapError(err))
+		h.writeError(w, r, err, mapError(err))
 		return
 	}
 	ctx := r.Context()
 	err = h.usecase.AddItem(ctx, orderID, productID, quantity)
 	if err != nil {
-		h.writeError(w, err, mapError(err))
+		h.writeError(w, r, err, mapError(err))
 		return
 	}
 
@@ -210,29 +226,29 @@ func (h *Handler) DeleteItem(w http.ResponseWriter, r *http.Request) {
 	reqOrderIDString := mux.Vars(r)["id"]
 	reqOrderID, err := strconv.ParseInt(reqOrderIDString, 10, 64)
 	if err != nil {
-		h.writeError(w, err, http.StatusBadRequest)
+		h.writeError(w, r, err, http.StatusBadRequest)
 		return
 	}
 	reqOrderItemIDString := mux.Vars(r)["item_id"]
 	reqOrderItemID, err := strconv.ParseInt(reqOrderItemIDString, 10, 64)
 	if err != nil {
-		h.writeError(w, err, http.StatusBadRequest)
+		h.writeError(w, r, err, http.StatusBadRequest)
 		return
 	}
 	orderID, err := domain_order.NewOrderID(reqOrderID)
 	if err != nil {
-		h.writeError(w, err, mapError(err))
+		h.writeError(w, r, err, mapError(err))
 		return
 	}
 	orderItemID, err := domain_order.NewItemID(reqOrderItemID)
 	if err != nil {
-		h.writeError(w, err, mapError(err))
+		h.writeError(w, r, err, mapError(err))
 		return
 	}
 	ctx := r.Context()
 	err = h.usecase.RemoveItem(ctx, orderID, orderItemID)
 	if err != nil {
-		h.writeError(w, err, mapError(err))
+		h.writeError(w, r, err, mapError(err))
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -243,18 +259,18 @@ func (h *Handler) PayOrder(w http.ResponseWriter, r *http.Request) {
 	reqOrderIDString := mux.Vars(r)["id"]
 	reqOrderID, err := strconv.ParseInt(reqOrderIDString, 10, 64)
 	if err != nil {
-		h.writeError(w, err, http.StatusBadRequest)
+		h.writeError(w, r, err, http.StatusBadRequest)
 		return
 	}
 	orderID, err := domain_order.NewOrderID(reqOrderID)
 	if err != nil {
-		h.writeError(w, err, mapError(err))
+		h.writeError(w, r, err, mapError(err))
 		return
 	}
 	ctx := r.Context()
 	err = h.usecase.PayOrder(ctx, orderID)
 	if err != nil {
-		h.writeError(w, err, mapError(err))
+		h.writeError(w, r, err, mapError(err))
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -265,18 +281,18 @@ func (h *Handler) ShipOrder(w http.ResponseWriter, r *http.Request) {
 	reqOrderIDString := mux.Vars(r)["id"]
 	reqOrderID, err := strconv.ParseInt(reqOrderIDString, 10, 64)
 	if err != nil {
-		h.writeError(w, err, http.StatusBadRequest)
+		h.writeError(w, r, err, http.StatusBadRequest)
 		return
 	}
 	orderID, err := domain_order.NewOrderID(reqOrderID)
 	if err != nil {
-		h.writeError(w, err, mapError(err))
+		h.writeError(w, r, err, mapError(err))
 		return
 	}
 	ctx := r.Context()
 	err = h.usecase.ShipOrder(ctx, orderID)
 	if err != nil {
-		h.writeError(w, err, mapError(err))
+		h.writeError(w, r, err, mapError(err))
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -287,18 +303,18 @@ func (h *Handler) CancelOrder(w http.ResponseWriter, r *http.Request) {
 	reqOrderIDString := mux.Vars(r)["id"]
 	reqOrderID, err := strconv.ParseInt(reqOrderIDString, 10, 64)
 	if err != nil {
-		h.writeError(w, err, http.StatusBadRequest)
+		h.writeError(w, r, err, http.StatusBadRequest)
 		return
 	}
 	orderID, err := domain_order.NewOrderID(reqOrderID)
 	if err != nil {
-		h.writeError(w, err, mapError(err))
+		h.writeError(w, r, err, mapError(err))
 		return
 	}
 	ctx := r.Context()
 	err = h.usecase.CancelOrder(ctx, orderID)
 	if err != nil {
-		h.writeError(w, err, mapError(err))
+		h.writeError(w, r, err, mapError(err))
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")

@@ -46,7 +46,7 @@ func main() {
 	repo := postgres_storage.NewPostgresOrderRepository(pool)
 	usecase := application_order.NewUseCase(productService, repo)
 
-	handler := transport_http.NewHandler(usecase)
+	handler := transport_http.NewHandler(usecase, logger)
 	router := transport_http.NewRouter(handler, logger)
 
 	server := transport_http.NewServer(":9091", router, logger)
