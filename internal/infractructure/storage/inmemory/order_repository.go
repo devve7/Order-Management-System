@@ -5,6 +5,7 @@ import (
 	domain_order "Order-Management-System/internal/domain/order"
 	"context"
 	"sync"
+	"time"
 )
 
 type InMemoryOrderRepository struct {
@@ -20,45 +21,47 @@ func NewInmemoryOrderRepository() *InMemoryOrderRepository {
 	}
 }
 
-func (r *InMemoryOrderRepository) Save(ctx context.Context, order *domain_order.Order) error {
-	if order == nil {
-		return domain_order.ErrOrderEmpty
+func (r *InMemoryOrderRepository) Create(ctx context.Context, customerID domain_order.CustomerID) (domain_order.OrderID, error) {
+	orderID := r.GetNextID()
+	status, err := domain_order.NewOrderStatus("created")
+	if err != nil {
+		return 0, err
 	}
-	orderID := order.ID()
-	if order.ID() == 0 {
-		return domain_order.ErrInvalidID
-	}
+	order := domain_order.NewOrder(orderID, customerID, status, time.Now())
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
-	r.orders[orderID] = order
+	r.orders[orderID] = order.Clone()
 
-	return nil
+	return orderID, nil
 }
 
 func (r *InMemoryOrderRepository) Update(ctx context.Context, order *domain_order.Order) error {
 	if order == nil {
 		return domain_order.ErrOrderEmpty
 	}
-	orderID := order.ID()
-	if _, ok := r.orders[orderID]; !ok {
-		return domain_order.ErrOrderNotFound
-	}
-	if order.ID() == 0 {
-		return domain_order.ErrInvalidID
-	}
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
-	r.orders[orderID] = order
 
+	orderID := order.ID()
+	current, ok := r.orders[orderID]
+	if !ok {
+		return domain_order.ErrOrderNotFound
+	}
+
+	if current.Version() != order.Version() {
+		return domain_order.ErrConcurrentUpdate
+	}
+
+	r.orders[orderID] = order.WithNextVersion()
 	return nil
 }
 
-func (r *InMemoryOrderRepository) NextID(ctx context.Context) (domain_order.OrderID, error) {
+func (r *InMemoryOrderRepository) GetNextID() domain_order.OrderID {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 	result := r.nextID
 	r.nextID += 1
-	return result, nil
+	return result
 }
 
 func (r *InMemoryOrderRepository) Get(ctx context.Context, id domain_order.OrderID) (*domain_order.Order, error) {

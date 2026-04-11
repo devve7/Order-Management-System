@@ -6,9 +6,11 @@ import (
 )
 
 type OrderItemDTO struct {
-	ID    int64
-	Name  string
-	Price float64
+	ID        int64
+	ProductID int64
+	Name      string
+	Price     int64
+	Quantity  int64
 }
 
 type OrderDTO struct {
@@ -17,7 +19,7 @@ type OrderDTO struct {
 	Status     string
 	CreatedAt  time.Time
 	Items      []OrderItemDTO
-	Total      float64
+	Total      int64
 }
 
 func ToOrderDTO(order *domain_order.Order) OrderDTO {
@@ -25,9 +27,11 @@ func ToOrderDTO(order *domain_order.Order) OrderDTO {
 
 	for _, item := range order.Items() {
 		items = append(items, OrderItemDTO{
-			ID:    int64(item.ID()),
-			Name:  item.Name(),
-			Price: float64(item.Price()),
+			ID:        int64(item.ID()),
+			ProductID: int64(item.ProductID()),
+			Name:      string(item.Name()),
+			Price:     int64(item.Price()),
+			Quantity:  int64(item.Quantity()),
 		})
 	}
 
@@ -37,6 +41,6 @@ func ToOrderDTO(order *domain_order.Order) OrderDTO {
 		Status:     string(order.Status()),
 		CreatedAt:  order.CreatedAt(),
 		Items:      items,
-		Total:      float64(order.Total()),
+		Total:      int64(order.Total()),
 	}
 }

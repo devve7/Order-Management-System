@@ -7,10 +7,14 @@ var (
 	ErrOrderEmpty     = errors.New("order is empty")
 	ErrOrderShipped   = errors.New("order is shipped")
 	ErrOrderCancelled = errors.New("order is cancelled")
+	ErrOrderPaid      = errors.New("order is paid")
 
-	ErrInvalidStatus = errors.New("invalid status")
-	ErrInvalidPrice  = errors.New("invalid price")
-	ErrInvalidID     = errors.New("id cannot be negative")
+	ErrInvalidStatus       = errors.New("invalid status")
+	ErrInvalidPrice        = errors.New("invalid price")
+	ErrInvalidID           = errors.New("id cannot be negative")
+	ErrInvalidQuantity     = errors.New("invalid quantity")
+	ErrInvalidProductName  = errors.New("invalid product name")
+	ErrInvalidOrderVersion = errors.New("invalid order version")
 
 	ErrCannotShip   = errors.New("cannot ship")
 	ErrCannotPay    = errors.New("cannot pay")
@@ -18,5 +22,5 @@ var (
 
 	ErrOrderItemNotFound = errors.New("order item not found")
 
-	ErrProductNotFound = errors.New("product not found")
+	ErrConcurrentUpdate = errors.New("order version conflict")
 )

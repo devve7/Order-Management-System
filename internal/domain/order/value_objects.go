@@ -36,11 +36,38 @@ func NewProductID(id int64) (ProductID, error) {
 	return ProductID(id), nil
 }
 
-type Price float64
+type Price int64
 
-func NewPrice(amount float64) (Price, error) {
+func NewPrice(amount int64) (Price, error) {
 	if amount < 0 {
 		return 0, ErrInvalidPrice
 	}
 	return Price(amount), nil
+}
+
+type Quantity int64
+
+func NewQuantity(q int64) (Quantity, error) {
+	if q <= 0 {
+		return 0, ErrInvalidQuantity
+	}
+	return Quantity(q), nil
+}
+
+type ProductName string
+
+func NewProductName(s string) (ProductName, error) {
+	if s == "" {
+		return "", ErrInvalidProductName
+	}
+	return ProductName(s), nil
+}
+
+type OrderVersion int64
+
+func NewOrderVersion(v int64) (OrderVersion, error) {
+	if v <= 0 {
+		return 0, ErrInvalidOrderVersion
+	}
+	return OrderVersion(v), nil
 }
