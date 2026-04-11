@@ -6,3 +6,9 @@ import "github.com/jackc/pgx/v5/pgxpool"
 type PostgresOrderRepository struct {
 	pool *pgxpool.Pool
 }
+
+func NewPostgresOrderRepository(pool *pgxpool.Pool) *PostgresOrderRepository {
+	return &PostgresOrderRepository{
+		pool: pool,
+	}
+}

@@ -2,6 +2,7 @@ package main
 
 import (
 	application_order "Order-Management-System/internal/application/order"
+	"Order-Management-System/internal/infractructure/postgres"
 	inmemory_product_service "Order-Management-System/internal/infractructure/product/inmemory"
 	inmemory_storage "Order-Management-System/internal/infractructure/storage/inmemory"
 	transport_http "Order-Management-System/internal/transport/http"
@@ -11,20 +12,38 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 )
 
 func main() {
-	productService := inmemory_product_service.NewInMemoryService()
-	productService.AddProduct(1, "Iphone", 1000, 1000)
-	repo := inmemory_storage.NewInmemoryOrderRepository()
-	usecase := application_order.NewUseCase(productService, repo)
-
 	logger := logrus.New()
 	logger.SetFormatter(&logrus.JSONFormatter{
 		PrettyPrint:     true,
 		TimestampFormat: "2006-01-02 15:04:05",
 	})
+
+	if err := godotenv.Load(); err != nil {
+		logger.Fatalf("failed to load .env: %v", err)
+	}
+
+	dsn := os.Getenv("DB_DSN")
+	if dsn == "" {
+		logger.Fatal("DB_DSN is empty")
+	}
+
+	ctx := context.Background()
+
+	pool, err := postgres.NewPool(ctx, dsn)
+	if err != nil {
+		logger.Fatalf("db connection failed: %v", err)
+	}
+	defer pool.Close()
+
+	productService := inmemory_product_service.NewInMemoryService()
+	productService.AddProduct(1, "Iphone", 1000, 1000)
+	repo := inmemory_storage.NewInmemoryOrderRepository()
+	usecase := application_order.NewUseCase(productService, repo)
 
 	handler := transport_http.NewHandler(usecase)
 	router := transport_http.NewRouter(handler, logger)
