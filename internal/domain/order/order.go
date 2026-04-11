@@ -27,11 +27,11 @@ func NewOrder(id OrderID, customerID CustomerID, status OrderStatus, time time.T
 	}
 }
 
-func RestoreOrder(id OrderID, customerID CustomerID, status OrderStatus, time time.Time, nextItemID ItemID, version OrderVersion) *Order {
+func RestoreOrder(id OrderID, customerID CustomerID, status OrderStatus, time time.Time, nextItemID ItemID, version OrderVersion, items []*OrderItem) *Order {
 	return &Order{
 		id:         id,
 		customerID: customerID,
-		items:      make([]*OrderItem, 0),
+		items:      items,
 		status:     status,
 		createdAt:  time,
 		nextItemID: nextItemID,
@@ -104,9 +104,9 @@ func (o *Order) Total() Price {
 	if len(o.items) == 0 {
 		return 0
 	}
-	var total float64 = 0
+	var total int64 = 0
 	for _, item := range o.items {
-		total += float64(item.Price()) * float64(item.Quantity())
+		total += int64(item.Price()) * int64(item.Quantity())
 	}
 	price, _ := NewPrice(total)
 	return price

@@ -104,7 +104,7 @@ func TestItemID(t *testing.T) {
 func TestPrice(t *testing.T) {
 	tests := []struct {
 		name           string
-		amount         float64
+		amount         int64
 		err            error
 		expectedAmount float64
 	}{

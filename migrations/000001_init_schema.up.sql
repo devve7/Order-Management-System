@@ -12,7 +12,7 @@ CREATE TABLE order_items (
     item_id     BIGINT NOT NULL,
     product_id  BIGINT NOT NULL,
     name        TEXT NOT NULL,
-    price       DOUBLE PRECISION NOT NULL,
+    price_cents       BIGINT NOT NULL,
     quantity    BIGINT NOT NULL,
 
     PRIMARY KEY (order_id, item_id),

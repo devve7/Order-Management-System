@@ -9,11 +9,11 @@ type ErrorResponse struct {
 }
 
 type OrderItemDTO struct {
-	ID        int64   `json:"order_item_id"`
-	ProductID int64   `json:"product_id"`
-	Name      string  `json:"name"`
-	Price     float64 `json:"price"`
-	Quantity  int64   `json:"quantity"`
+	ID        int64  `json:"order_item_id"`
+	ProductID int64  `json:"product_id"`
+	Name      string `json:"name"`
+	Price     int64  `json:"price"`
+	Quantity  int64  `json:"quantity"`
 }
 
 type OrderDTO struct {
@@ -22,7 +22,7 @@ type OrderDTO struct {
 	Status     string         `json:"status"`
 	CreatedAt  string         `json:"created_at"`
 	Items      []OrderItemDTO `json:"items"`
-	Total      float64        `json:"total"`
+	Total      int64          `json:"total"`
 }
 
 func ToOrderDTO(orderDTO *application_order.OrderDTO) OrderDTO {
