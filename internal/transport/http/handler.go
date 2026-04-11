@@ -44,7 +44,8 @@ func mapError(err error) int {
 		errors.Is(err, domain_order.ErrOrderCancelled),
 		errors.Is(err, domain_order.ErrOrderShipped),
 		errors.Is(err, domain_order.ErrOrderEmpty),
-		errors.Is(err, application_product.ErrInsufficientStock):
+		errors.Is(err, application_product.ErrInsufficientStock),
+		errors.Is(err, domain_order.ErrConcurrentUpdate):
 		return http.StatusConflict
 
 	default:

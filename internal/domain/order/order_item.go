@@ -8,23 +8,14 @@ type OrderItem struct {
 	quantity  Quantity
 }
 
-func NewOrderItem(productID ProductID, name ProductName, price Price, quantity Quantity) (*OrderItem, error) {
-	return &OrderItem{
-		id:        0,
-		productID: productID,
-		name:      name,
-		price:     price,
-		quantity:  quantity,
-	}, nil
-}
-func RestoreOrderItem(id ItemID, productID ProductID, name ProductName, price Price, quantity Quantity) (*OrderItem, error) {
+func NewOrderItem(id ItemID, productID ProductID, name ProductName, price Price, quantity Quantity) *OrderItem {
 	return &OrderItem{
 		id:        id,
 		productID: productID,
 		name:      name,
 		price:     price,
 		quantity:  quantity,
-	}, nil
+	}
 }
 
 func (i OrderItem) HasID() bool {

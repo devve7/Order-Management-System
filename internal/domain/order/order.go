@@ -11,6 +11,8 @@ type Order struct {
 	items      []*OrderItem
 	status     OrderStatus
 	createdAt  time.Time
+	nextItemID ItemID
+	version    OrderVersion
 }
 
 func NewOrder(id OrderID, customerID CustomerID, status OrderStatus, time time.Time) *Order {
@@ -20,19 +22,33 @@ func NewOrder(id OrderID, customerID CustomerID, status OrderStatus, time time.T
 		items:      make([]*OrderItem, 0),
 		status:     status,
 		createdAt:  time,
+		nextItemID: 1,
+		version:    1,
 	}
 }
 
-func (o *Order) AddItem(item *OrderItem) error {
-	if item == nil {
-		return ErrOrderItemNotFound
+func RestoreOrder(id OrderID, customerID CustomerID, status OrderStatus, time time.Time, nextItemID ItemID, version OrderVersion) *Order {
+	return &Order{
+		id:         id,
+		customerID: customerID,
+		items:      make([]*OrderItem, 0),
+		status:     status,
+		createdAt:  time,
+		nextItemID: nextItemID,
+		version:    version,
 	}
+}
+
+func (o *Order) AddItem(productID ProductID, name ProductName, price Price, quantity Quantity) error {
 	if o.status == StatusCancelled {
 		return ErrOrderCancelled
 	}
 	if o.status == StatusShipped {
 		return ErrOrderShipped
 	}
+
+	itemID := o.getNextItemID()
+	item := NewOrderItem(itemID, productID, name, price, quantity)
 	o.items = append(o.items, item)
 
 	return nil
@@ -135,4 +151,20 @@ func (o *Order) Items() []*OrderItem {
 
 func (o *Order) CreatedAt() time.Time {
 	return o.createdAt
+}
+
+func (o *Order) getNextItemID() ItemID {
+	id := o.nextItemID
+	o.nextItemID++
+	return id
+}
+
+func (o *Order) Version() OrderVersion {
+	return o.version
+}
+
+func (o *Order) WithNextVersion() *Order {
+	clone := o.Clone()
+	clone.version++
+	return clone
 }

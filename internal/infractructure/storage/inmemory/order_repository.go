@@ -21,12 +21,16 @@ func NewInmemoryOrderRepository() *InMemoryOrderRepository {
 	}
 }
 
-func (r *InMemoryOrderRepository) Create(ctx context.Context, customerID domain_order.CustomerID, status domain_order.OrderStatus) (domain_order.OrderID, error) {
+func (r *InMemoryOrderRepository) Create(ctx context.Context, customerID domain_order.CustomerID) (domain_order.OrderID, error) {
 	orderID := r.GetNextID()
+	status, err := domain_order.NewOrderStatus("created")
+	if err != nil {
+		return 0, err
+	}
 	order := domain_order.NewOrder(orderID, customerID, status, time.Now())
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
-	r.orders[orderID] = order
+	r.orders[orderID] = order.Clone()
 
 	return orderID, nil
 }
@@ -37,15 +41,18 @@ func (r *InMemoryOrderRepository) Update(ctx context.Context, order *domain_orde
 	}
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
+
 	orderID := order.ID()
-	if _, ok := r.orders[orderID]; !ok {
+	current, ok := r.orders[orderID]
+	if !ok {
 		return domain_order.ErrOrderNotFound
 	}
-	if order.ID() == 0 {
-		return domain_order.ErrInvalidID
-	}
-	r.orders[orderID] = order
 
+	if current.Version() != order.Version() {
+		return domain_order.ErrConcurrentUpdate
+	}
+
+	r.orders[orderID] = order.WithNextVersion()
 	return nil
 }
 

@@ -5,7 +5,7 @@ import (
 )
 
 type Repository interface {
-	Create(ctx context.Context, customerID CustomerID, status OrderStatus) (OrderID, error)
+	Create(ctx context.Context, customerID CustomerID) (OrderID, error)
 
 	Get(ctx context.Context, id OrderID) (*Order, error)
 

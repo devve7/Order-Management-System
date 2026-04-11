@@ -62,3 +62,12 @@ func NewProductName(s string) (ProductName, error) {
 	}
 	return ProductName(s), nil
 }
+
+type OrderVersion int64
+
+func NewOrderVersion(v int64) (OrderVersion, error) {
+	if v <= 0 {
+		return 0, ErrInvalidOrderVersion
+	}
+	return OrderVersion(v), nil
+}

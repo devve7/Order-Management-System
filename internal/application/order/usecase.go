@@ -20,11 +20,7 @@ func NewUseCase(productService product.ProductService, repo domain_order.Reposit
 }
 
 func (u *UseCase) CreateOrder(ctx context.Context, customerID domain_order.CustomerID) (domain_order.OrderID, error) {
-	status, err := domain_order.NewOrderStatus("created")
-	if err != nil {
-		return 0, err
-	}
-	orderID, err := u.repo.Create(ctx, customerID, status)
+	orderID, err := u.repo.Create(ctx, customerID)
 	if err != nil {
 		return 0, err
 	}
@@ -40,20 +36,11 @@ func (u *UseCase) AddItem(ctx context.Context, orderID domain_order.OrderID, pro
 	if err != nil {
 		return err
 	}
-	item, err := domain_order.NewOrderItem(
-		productID,
-		snapshot.Name,
-		snapshot.Price,
-		domain_order.Quantity(quantity),
-	)
-	if err != nil {
-		return err
-	}
 	order, err := u.repo.Get(ctx, orderID)
 	if err != nil {
 		return err
 	}
-	err = order.AddItem(item)
+	err = order.AddItem(productID, snapshot.Name, snapshot.Price, quantity)
 	if err != nil {
 		return err
 	}
