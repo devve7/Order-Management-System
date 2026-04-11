@@ -36,9 +36,9 @@ func NewProductID(id int64) (ProductID, error) {
 	return ProductID(id), nil
 }
 
-type Price float64
+type Price int64
 
-func NewPrice(amount float64) (Price, error) {
+func NewPrice(amount int64) (Price, error) {
 	if amount < 0 {
 		return 0, ErrInvalidPrice
 	}
