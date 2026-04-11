@@ -30,7 +30,7 @@ func (r *PostgresOrderRepository) Create(ctx context.Context, customerID domain_
 	query := `
 		INSERT INTO orders (customer_id, status, created_at, next_item_id, version)
 		VALUES ($1, $2, $3, $4, $5)
-		RETURING id
+		RETURNING id
 	`
 
 	now := time.Now()
