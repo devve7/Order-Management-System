@@ -84,3 +84,13 @@ func (p *Product) Active() bool {
 func (p *Product) HasID() bool {
 	return p.id > 0
 }
+
+func (p *Product) EnsureAvailable(quantity Stock) error {
+	if !p.active {
+		return ErrInactiveProduct
+	}
+	if p.stock < quantity {
+		return ErrInsufficientStock
+	}
+	return nil
+}
