@@ -97,12 +97,12 @@ func (u *UseCase) ChangePrice(ctx context.Context, id int64, price int64) error 
 	return err
 }
 
-func (u *UseCase) AddStock(ctx context.Context, id int64, stock int64) error {
+func (u *UseCase) AddStock(ctx context.Context, id int64, amount int64) error {
 	productID, err := domain_product.NewProductID(id)
 	if err != nil {
 		return err
 	}
-	productStock, err := domain_product.NewStock(stock)
+	productStock, err := domain_product.NewStock(amount)
 	if err != nil {
 		return err
 	}
@@ -115,12 +115,12 @@ func (u *UseCase) AddStock(ctx context.Context, id int64, stock int64) error {
 	return err
 }
 
-func (u *UseCase) RemoveStock(ctx context.Context, id int64, stock int64) error {
+func (u *UseCase) RemoveStock(ctx context.Context, id int64, amount int64) error {
 	productID, err := domain_product.NewProductID(id)
 	if err != nil {
 		return err
 	}
-	productStock, err := domain_product.NewStock(stock)
+	productStock, err := domain_product.NewStock(amount)
 	if err != nil {
 		return err
 	}
