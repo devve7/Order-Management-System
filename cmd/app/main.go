@@ -2,10 +2,12 @@ package main
 
 import (
 	application_order "Order-Management-System/internal/application/order"
-	"Order-Management-System/internal/infractructure/postgres"
-	inmemory_product_service "Order-Management-System/internal/infractructure/product/inmemory"
+	application_product "Order-Management-System/internal/application/product"
+	"Order-Management-System/internal/infractructure/db"
 	postgres_storage "Order-Management-System/internal/infractructure/storage/postgres"
 	transport_http "Order-Management-System/internal/transport/http"
+	transport_http_order "Order-Management-System/internal/transport/http/order"
+	transport_http_product "Order-Management-System/internal/transport/http/product"
 	"context"
 	"os"
 	"os/signal"
@@ -34,20 +36,21 @@ func main() {
 
 	ctx := context.Background()
 
-	pool, err := postgres.NewPool(ctx, dsn)
+	pool, err := db.NewPool(ctx, dsn)
 	if err != nil {
 		logger.Fatalf("db connection failed: %v", err)
 	}
 	defer pool.Close()
 
-	productService := inmemory_product_service.NewInMemoryService()
-	productService.AddProduct(1, "Iphone", 1000, 1000)
+	productRepo := postgres_storage.NewPostgresProductRepository(pool)
+	productUseCase := application_product.NewUseCase(productRepo)
 
-	repo := postgres_storage.NewPostgresOrderRepository(pool)
-	usecase := application_order.NewUseCase(productService, repo)
+	orderRepo := postgres_storage.NewPostgresOrderRepository(pool)
+	orderUseCase := application_order.NewUseCase(productUseCase, orderRepo)
 
-	handler := transport_http.NewHandler(usecase, logger)
-	router := transport_http.NewRouter(handler, logger)
+	orderHandler := transport_http_order.NewOrderHandler(orderUseCase, logger)
+	productHandler := transport_http_product.NewProductHandler(productUseCase, logger)
+	router := transport_http.NewRouter(orderHandler, productHandler, logger)
 
 	server := transport_http.NewServer(":9091", router, logger)
 	go func() {

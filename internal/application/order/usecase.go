@@ -2,24 +2,28 @@
 package order
 
 import (
-	product "Order-Management-System/internal/application/product"
+	"Order-Management-System/internal/application/ports"
 	domain_order "Order-Management-System/internal/domain/order"
 	"context"
 )
 
 type UseCase struct {
 	repo           domain_order.Repository
-	productService product.ProductService
+	productService ports.ProductForOrder
 }
 
-func NewUseCase(productService product.ProductService, repo domain_order.Repository) *UseCase {
+func NewUseCase(productService ports.ProductForOrder, repo domain_order.Repository) *UseCase {
 	return &UseCase{
 		repo:           repo,
 		productService: productService,
 	}
 }
 
-func (u *UseCase) CreateOrder(ctx context.Context, customerID domain_order.CustomerID) (domain_order.OrderID, error) {
+func (u *UseCase) CreateOrder(ctx context.Context, rawCustomerID int64) (domain_order.OrderID, error) {
+	customerID, err := domain_order.NewCustomerID(rawCustomerID)
+	if err != nil {
+		return 0, err
+	}
 	orderID, err := u.repo.Create(ctx, customerID)
 	if err != nil {
 		return 0, err
@@ -27,12 +31,24 @@ func (u *UseCase) CreateOrder(ctx context.Context, customerID domain_order.Custo
 	return orderID, nil
 }
 
-func (u *UseCase) AddItem(ctx context.Context, orderID domain_order.OrderID, productID domain_order.ProductID, quantity domain_order.Quantity) error {
-	err := u.productService.EnsureAvailable(ctx, productID, quantity)
+func (u *UseCase) AddItem(ctx context.Context, rawOrderID int64, rawProductID int64, rawQuantity int64) error {
+	orderID, err := domain_order.NewOrderID(rawOrderID)
 	if err != nil {
 		return err
 	}
-	snapshot, err := u.productService.GetSnapshot(ctx, productID)
+	productID, err := domain_order.NewProductID(rawProductID)
+	if err != nil {
+		return err
+	}
+	quantity, err := domain_order.NewQuantity(rawQuantity)
+	if err != nil {
+		return err
+	}
+	err = u.productService.EnsureAvailable(ctx, int64(productID), int64(quantity))
+	if err != nil {
+		return err
+	}
+	snapshot, err := u.productService.GetSnapshot(ctx, int64(productID))
 	if err != nil {
 		return err
 	}
@@ -40,7 +56,15 @@ func (u *UseCase) AddItem(ctx context.Context, orderID domain_order.OrderID, pro
 	if err != nil {
 		return err
 	}
-	err = order.AddItem(productID, snapshot.Name, snapshot.Price, quantity)
+	name, err := domain_order.NewProductName(snapshot.Name)
+	if err != nil {
+		return err
+	}
+	price, err := domain_order.NewPrice(snapshot.Price)
+	if err != nil {
+		return err
+	}
+	err = order.AddItem(productID, name, price, quantity)
 	if err != nil {
 		return err
 	}
@@ -51,7 +75,15 @@ func (u *UseCase) AddItem(ctx context.Context, orderID domain_order.OrderID, pro
 	return nil
 }
 
-func (u *UseCase) RemoveItem(ctx context.Context, orderID domain_order.OrderID, itemID domain_order.ItemID) error {
+func (u *UseCase) RemoveItem(ctx context.Context, rawOrderID int64, rawItemID int64) error {
+	orderID, err := domain_order.NewOrderID(rawOrderID)
+	if err != nil {
+		return err
+	}
+	itemID, err := domain_order.NewItemID(rawItemID)
+	if err != nil {
+		return err
+	}
 	order, err := u.repo.Get(ctx, orderID)
 	if err != nil {
 		return err
@@ -68,7 +100,11 @@ func (u *UseCase) RemoveItem(ctx context.Context, orderID domain_order.OrderID, 
 	return nil
 }
 
-func (u *UseCase) PayOrder(ctx context.Context, orderID domain_order.OrderID) error {
+func (u *UseCase) PayOrder(ctx context.Context, rawOrderID int64) error {
+	orderID, err := domain_order.NewOrderID(rawOrderID)
+	if err != nil {
+		return err
+	}
 	order, err := u.repo.Get(ctx, orderID)
 	if err != nil {
 		return err
@@ -84,7 +120,11 @@ func (u *UseCase) PayOrder(ctx context.Context, orderID domain_order.OrderID) er
 	return nil
 }
 
-func (u *UseCase) ShipOrder(ctx context.Context, orderID domain_order.OrderID) error {
+func (u *UseCase) ShipOrder(ctx context.Context, rawOrderID int64) error {
+	orderID, err := domain_order.NewOrderID(rawOrderID)
+	if err != nil {
+		return err
+	}
 	order, err := u.repo.Get(ctx, orderID)
 	if err != nil {
 		return err
@@ -100,7 +140,11 @@ func (u *UseCase) ShipOrder(ctx context.Context, orderID domain_order.OrderID) e
 	return nil
 }
 
-func (u *UseCase) CancelOrder(ctx context.Context, orderID domain_order.OrderID) error {
+func (u *UseCase) CancelOrder(ctx context.Context, rawOrderID int64) error {
+	orderID, err := domain_order.NewOrderID(rawOrderID)
+	if err != nil {
+		return err
+	}
 	order, err := u.repo.Get(ctx, orderID)
 	if err != nil {
 		return err
@@ -116,7 +160,11 @@ func (u *UseCase) CancelOrder(ctx context.Context, orderID domain_order.OrderID)
 	return nil
 }
 
-func (u *UseCase) GetOrder(ctx context.Context, orderID domain_order.OrderID) (OrderDTO, error) {
+func (u *UseCase) GetOrder(ctx context.Context, rawOrderID int64) (OrderDTO, error) {
+	orderID, err := domain_order.NewOrderID(rawOrderID)
+	if err != nil {
+		return OrderDTO{}, err
+	}
 	order, err := u.repo.Get(ctx, orderID)
 	if err != nil {
 		return OrderDTO{}, err

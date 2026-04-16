@@ -80,7 +80,7 @@ func (o *Order) Pay() error {
 	if len(o.items) == 0 {
 		return ErrOrderEmpty
 	}
-	if o.status == StatusCreated && o.status != StatusCancelled {
+	if o.status == StatusCreated {
 		o.status = StatusPaid
 		return nil
 	}

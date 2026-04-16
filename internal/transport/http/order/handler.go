@@ -1,10 +1,10 @@
-// Package http ...
-package http
+// Package order ...
+package order
 
 import (
 	application_order "Order-Management-System/internal/application/order"
-	application_product "Order-Management-System/internal/application/product"
 	domain_order "Order-Management-System/internal/domain/order"
+	domain_product "Order-Management-System/internal/domain/product"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -14,13 +14,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Handler struct {
+type OrderHandler struct {
 	usecase *application_order.UseCase
 	logger  *logrus.Logger
 }
 
-func NewHandler(usecase *application_order.UseCase, logger *logrus.Logger) *Handler {
-	return &Handler{
+func NewOrderHandler(usecase *application_order.UseCase, logger *logrus.Logger) *OrderHandler {
+	return &OrderHandler{
 		usecase: usecase,
 		logger:  logger,
 	}
@@ -32,12 +32,16 @@ func mapError(err error) int {
 		errors.Is(err, domain_order.ErrInvalidPrice),
 		errors.Is(err, domain_order.ErrInvalidProductName),
 		errors.Is(err, domain_order.ErrInvalidQuantity),
-		errors.Is(err, domain_order.ErrInvalidStatus):
+		errors.Is(err, domain_order.ErrInvalidStatus),
+		errors.Is(err, domain_product.ErrInvalidPrice),
+		errors.Is(err, domain_product.ErrInvalidProductID),
+		errors.Is(err, domain_product.ErrInvalidProductName),
+		errors.Is(err, domain_product.ErrInvalidStock):
 		return http.StatusBadRequest
 
 	case errors.Is(err, domain_order.ErrOrderNotFound),
 		errors.Is(err, domain_order.ErrOrderItemNotFound),
-		errors.Is(err, application_product.ErrProductNotFound):
+		errors.Is(err, domain_product.ErrProductNotFound):
 		return http.StatusNotFound
 
 	case errors.Is(err, domain_order.ErrCannotPay),
@@ -47,8 +51,10 @@ func mapError(err error) int {
 		errors.Is(err, domain_order.ErrOrderCancelled),
 		errors.Is(err, domain_order.ErrOrderShipped),
 		errors.Is(err, domain_order.ErrOrderEmpty),
-		errors.Is(err, application_product.ErrInsufficientStock),
-		errors.Is(err, domain_order.ErrConcurrentUpdate):
+		errors.Is(err, domain_order.ErrConcurrentUpdate),
+		errors.Is(err, domain_product.ErrInactiveProduct),
+		errors.Is(err, domain_product.ErrInsufficientStock),
+		errors.Is(err, domain_product.ErrProductAlreadyActive):
 		return http.StatusConflict
 
 	default:
@@ -56,7 +62,7 @@ func mapError(err error) int {
 	}
 }
 
-func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error, status int) {
+func (h *OrderHandler) writeError(w http.ResponseWriter, r *http.Request, err error, status int) {
 	entry := h.logger.WithFields(logrus.Fields{
 		"method":      r.Method,
 		"uri":         r.RequestURI,
@@ -87,7 +93,7 @@ func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error, 
 	}
 }
 
-func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
+func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	var req CustomerIDDTO
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
@@ -101,14 +107,8 @@ func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		h.writeError(w, r, errors.New("customer_id is required"), http.StatusBadRequest)
 		return
 	}
-
-	customerID, err := domain_order.NewCustomerID(*req.CustomerID)
-	if err != nil {
-		h.writeError(w, r, err, mapError(err))
-		return
-	}
 	ctx := r.Context()
-	orderID, err := h.usecase.CreateOrder(ctx, customerID)
+	orderID, err := h.usecase.CreateOrder(ctx, *req.CustomerID)
 	if err != nil {
 		h.writeError(w, r, err, mapError(err))
 		return
@@ -126,20 +126,15 @@ func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) GetOrder(w http.ResponseWriter, r *http.Request) {
+func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
 	reqOrderIDString := mux.Vars(r)["id"]
 	reqOrderID, err := strconv.ParseInt(reqOrderIDString, 10, 64)
 	if err != nil {
 		h.writeError(w, r, err, http.StatusBadRequest)
 		return
 	}
-	orderID, err := domain_order.NewOrderID(reqOrderID)
-	if err != nil {
-		h.writeError(w, r, err, mapError(err))
-		return
-	}
 	ctx := r.Context()
-	order, err := h.usecase.GetOrder(ctx, orderID)
+	order, err := h.usecase.GetOrder(ctx, reqOrderID)
 	if err != nil {
 		h.writeError(w, r, err, mapError(err))
 		return
@@ -153,7 +148,7 @@ func (h *Handler) GetOrder(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) GetOrders(w http.ResponseWriter, r *http.Request) {
+func (h *OrderHandler) GetOrders(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	orders, err := h.usecase.GetOrders(ctx)
 	if err != nil {
@@ -174,7 +169,7 @@ func (h *Handler) GetOrders(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) AddItem(w http.ResponseWriter, r *http.Request) {
+func (h *OrderHandler) AddItem(w http.ResponseWriter, r *http.Request) {
 	var req NewOrderItemDTO
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
@@ -197,23 +192,8 @@ func (h *Handler) AddItem(w http.ResponseWriter, r *http.Request) {
 		h.writeError(w, r, err, http.StatusBadRequest)
 		return
 	}
-	productID, err := domain_order.NewProductID(*req.ProductID)
-	if err != nil {
-		h.writeError(w, r, err, http.StatusBadRequest)
-		return
-	}
-	quantity, err := domain_order.NewQuantity(*req.Quantity)
-	if err != nil {
-		h.writeError(w, r, err, http.StatusBadRequest)
-		return
-	}
-	orderID, err := domain_order.NewOrderID(reqOrderID)
-	if err != nil {
-		h.writeError(w, r, err, mapError(err))
-		return
-	}
 	ctx := r.Context()
-	err = h.usecase.AddItem(ctx, orderID, productID, quantity)
+	err = h.usecase.AddItem(ctx, reqOrderID, *req.ProductID, *req.Quantity)
 	if err != nil {
 		h.writeError(w, r, err, mapError(err))
 		return
@@ -223,7 +203,7 @@ func (h *Handler) AddItem(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *Handler) DeleteItem(w http.ResponseWriter, r *http.Request) {
+func (h *OrderHandler) DeleteItem(w http.ResponseWriter, r *http.Request) {
 	reqOrderIDString := mux.Vars(r)["id"]
 	reqOrderID, err := strconv.ParseInt(reqOrderIDString, 10, 64)
 	if err != nil {
@@ -236,18 +216,8 @@ func (h *Handler) DeleteItem(w http.ResponseWriter, r *http.Request) {
 		h.writeError(w, r, err, http.StatusBadRequest)
 		return
 	}
-	orderID, err := domain_order.NewOrderID(reqOrderID)
-	if err != nil {
-		h.writeError(w, r, err, mapError(err))
-		return
-	}
-	orderItemID, err := domain_order.NewItemID(reqOrderItemID)
-	if err != nil {
-		h.writeError(w, r, err, mapError(err))
-		return
-	}
 	ctx := r.Context()
-	err = h.usecase.RemoveItem(ctx, orderID, orderItemID)
+	err = h.usecase.RemoveItem(ctx, reqOrderID, reqOrderItemID)
 	if err != nil {
 		h.writeError(w, r, err, mapError(err))
 		return
@@ -256,20 +226,15 @@ func (h *Handler) DeleteItem(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *Handler) PayOrder(w http.ResponseWriter, r *http.Request) {
+func (h *OrderHandler) PayOrder(w http.ResponseWriter, r *http.Request) {
 	reqOrderIDString := mux.Vars(r)["id"]
 	reqOrderID, err := strconv.ParseInt(reqOrderIDString, 10, 64)
 	if err != nil {
 		h.writeError(w, r, err, http.StatusBadRequest)
 		return
 	}
-	orderID, err := domain_order.NewOrderID(reqOrderID)
-	if err != nil {
-		h.writeError(w, r, err, mapError(err))
-		return
-	}
 	ctx := r.Context()
-	err = h.usecase.PayOrder(ctx, orderID)
+	err = h.usecase.PayOrder(ctx, reqOrderID)
 	if err != nil {
 		h.writeError(w, r, err, mapError(err))
 		return
@@ -278,20 +243,15 @@ func (h *Handler) PayOrder(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *Handler) ShipOrder(w http.ResponseWriter, r *http.Request) {
+func (h *OrderHandler) ShipOrder(w http.ResponseWriter, r *http.Request) {
 	reqOrderIDString := mux.Vars(r)["id"]
 	reqOrderID, err := strconv.ParseInt(reqOrderIDString, 10, 64)
 	if err != nil {
 		h.writeError(w, r, err, http.StatusBadRequest)
 		return
 	}
-	orderID, err := domain_order.NewOrderID(reqOrderID)
-	if err != nil {
-		h.writeError(w, r, err, mapError(err))
-		return
-	}
 	ctx := r.Context()
-	err = h.usecase.ShipOrder(ctx, orderID)
+	err = h.usecase.ShipOrder(ctx, reqOrderID)
 	if err != nil {
 		h.writeError(w, r, err, mapError(err))
 		return
@@ -300,20 +260,15 @@ func (h *Handler) ShipOrder(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *Handler) CancelOrder(w http.ResponseWriter, r *http.Request) {
+func (h *OrderHandler) CancelOrder(w http.ResponseWriter, r *http.Request) {
 	reqOrderIDString := mux.Vars(r)["id"]
 	reqOrderID, err := strconv.ParseInt(reqOrderIDString, 10, 64)
 	if err != nil {
 		h.writeError(w, r, err, http.StatusBadRequest)
 		return
 	}
-	orderID, err := domain_order.NewOrderID(reqOrderID)
-	if err != nil {
-		h.writeError(w, r, err, mapError(err))
-		return
-	}
 	ctx := r.Context()
-	err = h.usecase.CancelOrder(ctx, orderID)
+	err = h.usecase.CancelOrder(ctx, reqOrderID)
 	if err != nil {
 		h.writeError(w, r, err, mapError(err))
 		return
