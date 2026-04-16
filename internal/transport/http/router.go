@@ -1,27 +1,41 @@
+// Package http ...
 package http
 
 import (
+	"Order-Management-System/internal/transport/http/middleware"
+	http_order "Order-Management-System/internal/transport/http/order"
+	http_product "Order-Management-System/internal/transport/http/product"
 	"net/http"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
 
-func NewRouter(h *Handler, logger *logrus.Logger) http.Handler {
+func NewRouter(orderHandler *http_order.OrderHandler, productHandler *http_product.ProductHandler, logger *logrus.Logger) http.Handler {
 	router := mux.NewRouter()
 
-	router.Use(LoggingMiddleWare(logger))
+	router.Use(middleware.LoggingMiddleWare(logger))
 
-	router.HandleFunc("/orders", h.CreateOrder).Methods(http.MethodPost)
-	router.HandleFunc("/orders/{id:[0-9]+}", h.GetOrder).Methods(http.MethodGet)
-	router.HandleFunc("/orders", h.GetOrders).Methods(http.MethodGet)
+	router.HandleFunc("/orders", orderHandler.CreateOrder).Methods(http.MethodPost)
+	router.HandleFunc("/orders/{id:[0-9]+}", orderHandler.GetOrder).Methods(http.MethodGet)
+	router.HandleFunc("/orders", orderHandler.GetOrders).Methods(http.MethodGet)
 
-	router.HandleFunc("/orders/{id:[0-9]+}/items", h.AddItem).Methods(http.MethodPost)
-	router.HandleFunc("/orders/{id:[0-9]+}/items/{item_id:[0-9]+}", h.DeleteItem).Methods(http.MethodDelete)
+	router.HandleFunc("/orders/{id:[0-9]+}/items", orderHandler.AddItem).Methods(http.MethodPost)
+	router.HandleFunc("/orders/{id:[0-9]+}/items/{item_id:[0-9]+}", orderHandler.DeleteItem).Methods(http.MethodDelete)
 
-	router.HandleFunc("/orders/{id:[0-9]+}/pay", h.PayOrder).Methods(http.MethodPost)
-	router.HandleFunc("/orders/{id:[0-9]+}/ship", h.ShipOrder).Methods(http.MethodPost)
-	router.HandleFunc("/orders/{id:[0-9]+}/cancel", h.CancelOrder).Methods(http.MethodPost)
+	router.HandleFunc("/orders/{id:[0-9]+}/pay", orderHandler.PayOrder).Methods(http.MethodPost)
+	router.HandleFunc("/orders/{id:[0-9]+}/ship", orderHandler.ShipOrder).Methods(http.MethodPost)
+	router.HandleFunc("/orders/{id:[0-9]+}/cancel", orderHandler.CancelOrder).Methods(http.MethodPost)
+
+	router.HandleFunc("/products", productHandler.CreateProduct).Methods(http.MethodPost)
+	router.HandleFunc("/products/{id:[0-9]+}", productHandler.GetProduct).Methods(http.MethodGet)
+	router.HandleFunc("/products", productHandler.GetProducts).Methods(http.MethodGet)
+
+	router.HandleFunc("/products/{id:[0-9]+}/price", productHandler.ChangePrice).Methods(http.MethodPost)
+	router.HandleFunc("/products/{id:[0-9]+}/activate", productHandler.ActivateProduct).Methods(http.MethodPost)
+	router.HandleFunc("/products/{id:[0-9]+}/deactivate", productHandler.DeactivateProduct).Methods(http.MethodPost)
+	router.HandleFunc("/products/{id:[0-9]+}/stock/add", productHandler.AddStock).Methods(http.MethodPost)
+	router.HandleFunc("/products/{id:[0-9]+}/stock/remove", productHandler.RemoveStock).Methods(http.MethodPost)
 
 	return router
 }
