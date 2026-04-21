@@ -81,37 +81,89 @@ migrations/          # SQL миграции
 
 ---
 
-## 🐳 Запуск через Docker
+
+## 🐳 Run with Docker
 
 ```bash
 docker-compose up --build
 ```
 
+Сервис будет доступен по адресу:
+
+http://localhost:9091
+
 ---
 
-## ⚡ Локальный запуск
+## 📦 API
 
-1. Создать `.env` файл
+### Products
 
-Пример:
+#### Create product
+POST /products
 
-```
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=postgres
-DB_NAME=orders
-```
-
-2. Применить миграции
-
-3. Запустить приложение:
-
-```bash
-go run cmd/app/main.go
+```json
+{
+  "name": "Laptop",
+  "price_cents": 100000,
+  "stock": 10
+}
 ```
 
 ---
+
+#### Get product
+GET /products/{id}
+
+---
+
+#### Get all products
+GET /products
+
+---
+
+#### Change price
+PATCH /products/{id}/price
+
+```json
+{
+  "price": 120000
+}
+```
+
+---
+
+#### Add stock
+POST /products/{id}/stock/add
+
+```json
+{
+  "stock_amount": 5
+}
+```
+
+---
+
+#### Remove stock
+POST /products/{id}/stock/remove
+
+```json
+{
+  "stock_amount": 3
+}
+```
+
+---
+
+#### Activate product
+POST /products/{id}/activate
+
+---
+
+#### Deactivate product
+POST /products/{id}/deactivate
+
+---
+
 
 ## 🧪 Тестирование
 
