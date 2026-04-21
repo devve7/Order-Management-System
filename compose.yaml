@@ -1,4 +1,18 @@
 services:
+  app:
+    build: .
+    container_name: oms-app
+    ports:
+      - "9091:9091"
+    depends_on:
+      - postgres
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${POSTGRES_DB}
+
   postgres:
     image: postgres:16
     container_name: oms-postgres
