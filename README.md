@@ -119,6 +119,8 @@ http://localhost:9091
 
 ### Orders
 
+---
+
 #### Create order
 POST /orders
 
