@@ -81,6 +81,27 @@ migrations/          # SQL миграции
 
 ---
 
+## 🛠 Makefile
+
+Проект поддерживает удобное управление через Makefile.
+
+### Основные команды:
+
+```bash
+make docker-up      # сборка и запуск сервиса (app + postgres)
+make docker-down    # остановка контейнеров
+make docker-logs    # просмотр логов
+
+make run            # запуск приложения локально (без Docker)
+make build          # сборка бинарника
+
+make test           # запуск всех тестов
+
+make migrate-up     # применить миграции
+make migrate-down   # откатить миграции
+
+---
+
 
 ## 🐳 Run with Docker
 
