@@ -176,6 +176,8 @@ POST /orders/{id}/cancel
 
 ### Products
 
+---
+
 #### Create product
 POST /products
 
