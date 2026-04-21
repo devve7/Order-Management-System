@@ -103,7 +103,6 @@ make migrate-down   # откатить миграции
 
 ---
 
-
 ## 🐳 Run with Docker
 
 ```bash
@@ -117,6 +116,61 @@ http://localhost:9091
 ---
 
 ## 📦 API
+
+### Orders
+
+#### Create order
+POST /orders
+
+``` json 
+{
+  "customer_id": 1
+}
+```
+
+---
+
+#### Get order 
+GET /orders/{id}
+
+---
+
+#### Get all orders
+GET /orders
+
+---
+
+#### Add item to order
+POST /orders/{id}/items
+
+``` json 
+{
+  "product_id": 1,
+  "quantity": 2
+}
+```
+
+--- 
+
+#### Remove item from order
+DELETE /orders/{id}/items/{item_id}
+
+--- 
+
+#### Pay order
+POST /orders/{id}/pay
+
+--- 
+
+#### Ship order
+POST /orders/{id}/ship
+
+---
+
+#### Cancel order
+POST /orders/{id}/cancel
+
+----
 
 ### Products
 
