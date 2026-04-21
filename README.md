@@ -99,6 +99,7 @@ make test           # запуск всех тестов
 
 make migrate-up     # применить миграции
 make migrate-down   # откатить миграции
+```
 
 ---
 
