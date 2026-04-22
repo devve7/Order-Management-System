@@ -103,6 +103,7 @@ func (h *ProductHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	id, err := h.usecase.CreateProduct(ctx, req.Name, *req.Price, *req.Stock)
 	if err != nil {
 		h.writeError(w, r, err, mapError(err))
+		return
 	}
 
 	resp := ProductIDDTO{
