@@ -1,131 +1,203 @@
 package order
 
-import (
-	"errors"
-	"testing"
-)
+import "testing"
 
-func TestOrderID(t *testing.T) {
+func TestNewOrderID(t *testing.T) {
 	tests := []struct {
-		name string
-		id   int64
-		err  error
+		name    string
+		input   int64
+		want    OrderID
+		wantErr error
 	}{
-		{
-			name: "ok",
-			id:   10,
-			err:  nil,
-		},
-		{
-			name: "negative",
-			id:   -10,
-			err:  ErrInvalidID,
-		},
+		{"positive", 10, 10, nil},
+		{"zero", 0, 0, nil},
+		{"negative", -1, 0, ErrInvalidID},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			orderID, err := NewOrderID(tt.id)
-			if !errors.Is(err, tt.err) {
-				t.Errorf("expected (%v), got (%v)", tt.err, err)
+			got, err := NewOrderID(tt.input)
+			if err != tt.wantErr {
+				t.Fatalf("NewOrderID(%d) error = %v, want %v", tt.input, err, tt.wantErr)
 			}
-			if tt.err == nil {
-				if orderID != OrderID(tt.id) {
-					t.Errorf("expected (%v), got (%v)", tt.id, orderID)
-				}
+			if got != tt.want {
+				t.Fatalf("NewOrderID(%d) = %v, want %v", tt.input, got, tt.want)
 			}
 		})
 	}
 }
 
-func TestCustomerID(t *testing.T) {
+func TestNewCustomerID(t *testing.T) {
 	tests := []struct {
-		name string
-		id   int64
-		err  error
+		name    string
+		input   int64
+		want    CustomerID
+		wantErr error
 	}{
-		{
-			name: "ok",
-			id:   10,
-			err:  nil,
-		},
-		{
-			name: "negative",
-			id:   -10,
-			err:  ErrInvalidID,
-		},
+		{"positive", 10, 10, nil},
+		{"zero", 0, 0, nil},
+		{"negative", -1, 0, ErrInvalidID},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			customerID, err := NewCustomerID(tt.id)
-			if !errors.Is(err, tt.err) {
-				t.Errorf("expected (%v), got (%v)", tt.err, err)
+			got, err := NewCustomerID(tt.input)
+			if err != tt.wantErr {
+				t.Fatalf("NewCustomerID(%d) error = %v, want %v", tt.input, err, tt.wantErr)
 			}
-			if tt.err == nil {
-				if customerID != CustomerID(tt.id) {
-					t.Errorf("expected (%v), got (%v)", tt.id, customerID)
-				}
+			if got != tt.want {
+				t.Fatalf("NewCustomerID(%d) = %v, want %v", tt.input, got, tt.want)
 			}
 		})
 	}
 }
 
-func TestItemID(t *testing.T) {
+func TestNewItemID(t *testing.T) {
 	tests := []struct {
-		name string
-		id   int64
-		err  error
+		name    string
+		input   int64
+		want    ItemID
+		wantErr error
 	}{
-		{
-			name: "ok",
-			id:   10,
-			err:  nil,
-		},
-		{
-			name: "negative",
-			id:   -10,
-			err:  ErrInvalidID,
-		},
+		{"positive", 10, 10, nil},
+		{"zero", 0, 0, nil},
+		{"negative", -1, 0, ErrInvalidID},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			itemID, err := NewItemID(tt.id)
-			if !errors.Is(err, tt.err) {
-				t.Errorf("expected (%v), got (%v)", tt.err, err)
+			got, err := NewItemID(tt.input)
+			if err != tt.wantErr {
+				t.Fatalf("NewItemID(%d) error = %v, want %v", tt.input, err, tt.wantErr)
 			}
-			if tt.err == nil {
-				if itemID != ItemID(tt.id) {
-					t.Errorf("expected (%v), got (%v)", tt.id, itemID)
-				}
+			if got != tt.want {
+				t.Fatalf("NewItemID(%d) = %v, want %v", tt.input, got, tt.want)
 			}
 		})
 	}
 }
 
-func TestPrice(t *testing.T) {
+func TestNewProductID(t *testing.T) {
 	tests := []struct {
-		name           string
-		amount         int64
-		err            error
-		expectedAmount float64
+		name    string
+		input   int64
+		want    ProductID
+		wantErr error
 	}{
-		{
-			name:           "ok",
-			amount:         1234,
-			err:            nil,
-			expectedAmount: 1234,
-		},
-		{
-			name:           "negative amount",
-			amount:         -39,
-			err:            ErrInvalidPrice,
-			expectedAmount: 0,
-		},
+		{"positive", 10, 10, nil},
+		{"zero", 0, 0, nil},
+		{"negative", -1, 0, ErrInvalidID},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			price, err := NewPrice(tt.amount)
-			if !errors.Is(err, tt.err) || float64(price) != tt.expectedAmount {
-				t.Errorf("Incorrect Price, expected (%v, %v), got (%v, %v)", tt.err, tt.amount, err, tt.expectedAmount)
+			got, err := NewProductID(tt.input)
+			if err != tt.wantErr {
+				t.Fatalf("NewProductID(%d) error = %v, want %v", tt.input, err, tt.wantErr)
+			}
+			if got != tt.want {
+				t.Fatalf("NewProductID(%d) = %v, want %v", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNewPrice(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   int64
+		want    Price
+		wantErr error
+	}{
+		{"positive", 100, 100, nil},
+		{"zero", 0, 0, nil},
+		{"negative", -1, 0, ErrInvalidPrice},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := NewPrice(tt.input)
+			if err != tt.wantErr {
+				t.Fatalf("NewPrice(%d) error = %v, want %v", tt.input, err, tt.wantErr)
+			}
+			if got != tt.want {
+				t.Fatalf("NewPrice(%d) = %v, want %v", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNewQuantity(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   int64
+		want    Quantity
+		wantErr error
+	}{
+		{"positive", 1, 1, nil},
+		{"many", 10, 10, nil},
+		{"zero", 0, 0, ErrInvalidQuantity},
+		{"negative", -1, 0, ErrInvalidQuantity},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := NewQuantity(tt.input)
+			if err != tt.wantErr {
+				t.Fatalf("NewQuantity(%d) error = %v, want %v", tt.input, err, tt.wantErr)
+			}
+			if got != tt.want {
+				t.Fatalf("NewQuantity(%d) = %v, want %v", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNewProductName(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    ProductName
+		wantErr error
+	}{
+		{"valid", "apple", "apple", nil},
+		{"empty", "", "", ErrInvalidProductName},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := NewProductName(tt.input)
+			if err != tt.wantErr {
+				t.Fatalf("NewProductName(%q) error = %v, want %v", tt.input, err, tt.wantErr)
+			}
+			if got != tt.want {
+				t.Fatalf("NewProductName(%q) = %v, want %v", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNewOrderVersion(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   int64
+		want    OrderVersion
+		wantErr error
+	}{
+		{"positive", 1, 1, nil},
+		{"many", 10, 10, nil},
+		{"zero", 0, 0, ErrInvalidOrderVersion},
+		{"negative", -1, 0, ErrInvalidOrderVersion},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := NewOrderVersion(tt.input)
+			if err != tt.wantErr {
+				t.Fatalf("NewOrderVersion(%d) error = %v, want %v", tt.input, err, tt.wantErr)
+			}
+			if got != tt.want {
+				t.Fatalf("NewOrderVersion(%d) = %v, want %v", tt.input, got, tt.want)
 			}
 		})
 	}
