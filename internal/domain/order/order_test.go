@@ -329,6 +329,31 @@ func TestOrderPay(t *testing.T) {
 			t.Fatalf("Status() = %v, want %v", order.Status(), StatusCreated)
 		}
 	})
+
+	t.Run("fails from non-created status", func(t *testing.T) {
+		tests := []OrderStatus{StatusPaid, StatusShipped, StatusCancelled}
+
+		for _, status := range tests {
+			t.Run(string(status), func(t *testing.T) {
+				order := NewOrder(
+					mustOrderID(t, 1),
+					mustCustomerID(t, 2),
+					StatusCreated,
+					time.Now(),
+				)
+				addTestItem(t, order, 100, "apple", 100, 1)
+				order.status = status
+
+				err := order.Pay()
+				if err != ErrCannotPay {
+					t.Fatalf("Pay() error = %v, want %v", err, ErrCannotPay)
+				}
+				if order.Status() != status {
+					t.Fatalf("Status() = %v, want %v", order.Status(), status)
+				}
+			})
+		}
+	})
 }
 
 func TestOrderShip(t *testing.T) {
