@@ -218,7 +218,7 @@ func TestGetProduct(t *testing.T) {
 			t.Fatalf("GetProduct() error = %v", err)
 		}
 		if dto.ID != 7 || dto.Name != "MacBook" || dto.Price != 200000 || dto.Stock != 5 || dto.Active != false {
-			t.Fatalf("unexpected dto: %+v", *dto)
+			t.Fatalf("unexpected dto: %+v", dto)
 		}
 	})
 
