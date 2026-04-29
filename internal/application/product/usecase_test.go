@@ -80,8 +80,9 @@ func mustStock(t *testing.T, stock int64) domain_product.Stock {
 }
 
 func TestNewUseCase(t *testing.T) {
+	cache := newMockCache()
 	repo := &repoMock{}
-	u := NewUseCase(repo)
+	u := NewUseCase(repo, cache)
 
 	if u == nil {
 		t.Fatal("NewUseCase() returned nil")
@@ -119,7 +120,8 @@ func TestCreateProduct(t *testing.T) {
 			},
 		}
 
-		u := NewUseCase(repo)
+		cache := newMockCache()
+		u := NewUseCase(repo, cache)
 
 		got, err := u.CreateProduct(context.Background(), "iPhone", 100000, 10)
 		if err != nil {
@@ -141,8 +143,8 @@ func TestCreateProduct(t *testing.T) {
 				return 0, nil
 			},
 		}
-
-		u := NewUseCase(repo)
+		cache := newMockCache()
+		u := NewUseCase(repo, cache)
 
 		_, err := u.CreateProduct(context.Background(), "", 100, 1)
 		if err != domain_product.ErrInvalidProductName {
@@ -154,7 +156,8 @@ func TestCreateProduct(t *testing.T) {
 	})
 
 	t.Run("invalid price", func(t *testing.T) {
-		u := NewUseCase(&repoMock{})
+		cache := newMockCache()
+		u := NewUseCase(&repoMock{}, cache)
 
 		_, err := u.CreateProduct(context.Background(), "iPhone", -1, 1)
 		if err != domain_product.ErrInvalidPrice {
@@ -163,7 +166,8 @@ func TestCreateProduct(t *testing.T) {
 	})
 
 	t.Run("invalid stock", func(t *testing.T) {
-		u := NewUseCase(&repoMock{})
+		cache := newMockCache()
+		u := NewUseCase(&repoMock{}, cache)
 
 		_, err := u.CreateProduct(context.Background(), "iPhone", 100, -1)
 		if err != domain_product.ErrInvalidStock {
@@ -178,8 +182,8 @@ func TestCreateProduct(t *testing.T) {
 				return 0, wantErr
 			},
 		}
-
-		u := NewUseCase(repo)
+		cache := newMockCache()
+		u := NewUseCase(repo, cache)
 
 		_, err := u.CreateProduct(context.Background(), "iPhone", 100, 1)
 		if err != wantErr {
@@ -206,20 +210,21 @@ func TestGetProduct(t *testing.T) {
 				return product, nil
 			},
 		}
-
-		u := NewUseCase(repo)
+		cache := newMockCache()
+		u := NewUseCase(repo, cache)
 
 		dto, err := u.GetProduct(context.Background(), 7)
 		if err != nil {
 			t.Fatalf("GetProduct() error = %v", err)
 		}
 		if dto.ID != 7 || dto.Name != "MacBook" || dto.Price != 200000 || dto.Stock != 5 || dto.Active != false {
-			t.Fatalf("unexpected dto: %+v", *dto)
+			t.Fatalf("unexpected dto: %+v", dto)
 		}
 	})
 
 	t.Run("invalid id", func(t *testing.T) {
-		u := NewUseCase(&repoMock{})
+		cache := newMockCache()
+		u := NewUseCase(&repoMock{}, cache)
 
 		_, err := u.GetProduct(context.Background(), 0)
 		if err != domain_product.ErrInvalidProductID {
@@ -234,7 +239,8 @@ func TestGetProduct(t *testing.T) {
 				return nil, wantErr
 			},
 		}
-		u := NewUseCase(repo)
+		cache := newMockCache()
+		u := NewUseCase(repo, cache)
 
 		_, err := u.GetProduct(context.Background(), 1)
 		if err != wantErr {
@@ -267,8 +273,8 @@ func TestGetProducts(t *testing.T) {
 				return products, nil
 			},
 		}
-
-		u := NewUseCase(repo)
+		cache := newMockCache()
+		u := NewUseCase(repo, cache)
 
 		got, err := u.GetProducts(context.Background())
 		if err != nil {
@@ -292,8 +298,8 @@ func TestGetProducts(t *testing.T) {
 				return nil, wantErr
 			},
 		}
-
-		u := NewUseCase(repo)
+		cache := newMockCache()
+		u := NewUseCase(repo, cache)
 
 		_, err := u.GetProducts(context.Background())
 		if err != wantErr {
@@ -325,8 +331,8 @@ func TestChangePrice(t *testing.T) {
 				return nil
 			},
 		}
-
-		u := NewUseCase(repo)
+		cache := newMockCache()
+		u := NewUseCase(repo, cache)
 
 		err := u.ChangePrice(context.Background(), 1, 120000)
 		if err != nil {
@@ -338,7 +344,8 @@ func TestChangePrice(t *testing.T) {
 	})
 
 	t.Run("invalid id", func(t *testing.T) {
-		u := NewUseCase(&repoMock{})
+		cache := newMockCache()
+		u := NewUseCase(&repoMock{}, cache)
 
 		err := u.ChangePrice(context.Background(), 0, 100)
 		if err != domain_product.ErrInvalidProductID {
@@ -347,7 +354,8 @@ func TestChangePrice(t *testing.T) {
 	})
 
 	t.Run("invalid price", func(t *testing.T) {
-		u := NewUseCase(&repoMock{})
+		cache := newMockCache()
+		u := NewUseCase(&repoMock{}, cache)
 
 		err := u.ChangePrice(context.Background(), 1, -1)
 		if err != domain_product.ErrInvalidPrice {
@@ -362,8 +370,8 @@ func TestChangePrice(t *testing.T) {
 				return nil, wantErr
 			},
 		}
-
-		u := NewUseCase(repo)
+		cache := newMockCache()
+		u := NewUseCase(repo, cache)
 
 		err := u.ChangePrice(context.Background(), 1, 200)
 		if err != wantErr {
@@ -389,8 +397,8 @@ func TestChangePrice(t *testing.T) {
 				return wantErr
 			},
 		}
-
-		u := NewUseCase(repo)
+		cache := newMockCache()
+		u := NewUseCase(repo, cache)
 
 		err := u.ChangePrice(context.Background(), 1, 120000)
 		if err != wantErr {
@@ -420,8 +428,8 @@ func TestAddStock(t *testing.T) {
 				return nil
 			},
 		}
-
-		u := NewUseCase(repo)
+		cache := newMockCache()
+		u := NewUseCase(repo, cache)
 
 		err := u.AddStock(context.Background(), 1, 5)
 		if err != nil {
@@ -430,7 +438,8 @@ func TestAddStock(t *testing.T) {
 	})
 
 	t.Run("invalid id", func(t *testing.T) {
-		u := NewUseCase(&repoMock{})
+		cache := newMockCache()
+		u := NewUseCase(&repoMock{}, cache)
 
 		err := u.AddStock(context.Background(), 0, 5)
 		if err != domain_product.ErrInvalidProductID {
@@ -439,7 +448,8 @@ func TestAddStock(t *testing.T) {
 	})
 
 	t.Run("invalid stock", func(t *testing.T) {
-		u := NewUseCase(&repoMock{})
+		cache := newMockCache()
+		u := NewUseCase(&repoMock{}, cache)
 
 		err := u.AddStock(context.Background(), 1, -1)
 		if err != domain_product.ErrInvalidStock {
@@ -454,8 +464,8 @@ func TestAddStock(t *testing.T) {
 				return nil, wantErr
 			},
 		}
-
-		u := NewUseCase(repo)
+		cache := newMockCache()
+		u := NewUseCase(repo, cache)
 
 		err := u.AddStock(context.Background(), 1, 5)
 		if err != wantErr {
@@ -481,8 +491,8 @@ func TestAddStock(t *testing.T) {
 				return wantErr
 			},
 		}
-
-		u := NewUseCase(repo)
+		cache := newMockCache()
+		u := NewUseCase(repo, cache)
 
 		err := u.AddStock(context.Background(), 1, 5)
 		if err != wantErr {
@@ -514,8 +524,8 @@ func TestRemoveStock(t *testing.T) {
 				return nil
 			},
 		}
-
-		u := NewUseCase(repo)
+		cache := newMockCache()
+		u := NewUseCase(repo, cache)
 
 		err := u.RemoveStock(context.Background(), 1, 4)
 		if err != nil {
@@ -527,7 +537,8 @@ func TestRemoveStock(t *testing.T) {
 	})
 
 	t.Run("invalid id", func(t *testing.T) {
-		u := NewUseCase(&repoMock{})
+		cache := newMockCache()
+		u := NewUseCase(&repoMock{}, cache)
 
 		err := u.RemoveStock(context.Background(), 0, 1)
 		if err != domain_product.ErrInvalidProductID {
@@ -536,7 +547,8 @@ func TestRemoveStock(t *testing.T) {
 	})
 
 	t.Run("invalid stock", func(t *testing.T) {
-		u := NewUseCase(&repoMock{})
+		cache := newMockCache()
+		u := NewUseCase(&repoMock{}, cache)
 
 		err := u.RemoveStock(context.Background(), 1, -1)
 		if err != domain_product.ErrInvalidStock {
@@ -551,8 +563,8 @@ func TestRemoveStock(t *testing.T) {
 				return nil, wantErr
 			},
 		}
-
-		u := NewUseCase(repo)
+		cache := newMockCache()
+		u := NewUseCase(repo, cache)
 
 		err := u.RemoveStock(context.Background(), 1, 4)
 		if err != wantErr {
@@ -578,8 +590,8 @@ func TestRemoveStock(t *testing.T) {
 				return nil
 			},
 		}
-
-		u := NewUseCase(repo)
+		cache := newMockCache()
+		u := NewUseCase(repo, cache)
 
 		err := u.RemoveStock(context.Background(), 1, 11)
 		if err != domain_product.ErrInsufficientStock {
@@ -605,8 +617,8 @@ func TestRemoveStock(t *testing.T) {
 				return wantErr
 			},
 		}
-
-		u := NewUseCase(repo)
+		cache := newMockCache()
+		u := NewUseCase(repo, cache)
 
 		err := u.RemoveStock(context.Background(), 1, 4)
 		if err != wantErr {
@@ -636,8 +648,8 @@ func TestDeactivateProduct(t *testing.T) {
 				return nil
 			},
 		}
-
-		u := NewUseCase(repo)
+		cache := newMockCache()
+		u := NewUseCase(repo, cache)
 
 		err := u.DeactivateProduct(context.Background(), 1)
 		if err != nil {
@@ -646,7 +658,8 @@ func TestDeactivateProduct(t *testing.T) {
 	})
 
 	t.Run("invalid id", func(t *testing.T) {
-		u := NewUseCase(&repoMock{})
+		cache := newMockCache()
+		u := NewUseCase(&repoMock{}, cache)
 
 		err := u.DeactivateProduct(context.Background(), 0)
 		if err != domain_product.ErrInvalidProductID {
@@ -661,8 +674,8 @@ func TestDeactivateProduct(t *testing.T) {
 				return nil, wantErr
 			},
 		}
-
-		u := NewUseCase(repo)
+		cache := newMockCache()
+		u := NewUseCase(repo, cache)
 
 		err := u.DeactivateProduct(context.Background(), 1)
 		if err != wantErr {
@@ -688,8 +701,8 @@ func TestDeactivateProduct(t *testing.T) {
 				return nil
 			},
 		}
-
-		u := NewUseCase(repo)
+		cache := newMockCache()
+		u := NewUseCase(repo, cache)
 
 		err := u.DeactivateProduct(context.Background(), 1)
 		if err != domain_product.ErrInactiveProduct {
@@ -715,8 +728,8 @@ func TestDeactivateProduct(t *testing.T) {
 				return wantErr
 			},
 		}
-
-		u := NewUseCase(repo)
+		cache := newMockCache()
+		u := NewUseCase(repo, cache)
 
 		err := u.DeactivateProduct(context.Background(), 1)
 		if err != wantErr {
@@ -746,8 +759,8 @@ func TestActivateProduct(t *testing.T) {
 				return nil
 			},
 		}
-
-		u := NewUseCase(repo)
+		cache := newMockCache()
+		u := NewUseCase(repo, cache)
 
 		err := u.ActivateProduct(context.Background(), 1)
 		if err != nil {
@@ -756,7 +769,8 @@ func TestActivateProduct(t *testing.T) {
 	})
 
 	t.Run("invalid id", func(t *testing.T) {
-		u := NewUseCase(&repoMock{})
+		cache := newMockCache()
+		u := NewUseCase(&repoMock{}, cache)
 
 		err := u.ActivateProduct(context.Background(), 0)
 		if err != domain_product.ErrInvalidProductID {
@@ -771,8 +785,8 @@ func TestActivateProduct(t *testing.T) {
 				return nil, wantErr
 			},
 		}
-
-		u := NewUseCase(repo)
+		cache := newMockCache()
+		u := NewUseCase(repo, cache)
 
 		err := u.ActivateProduct(context.Background(), 1)
 		if err != wantErr {
@@ -798,8 +812,8 @@ func TestActivateProduct(t *testing.T) {
 				return nil
 			},
 		}
-
-		u := NewUseCase(repo)
+		cache := newMockCache()
+		u := NewUseCase(repo, cache)
 
 		err := u.ActivateProduct(context.Background(), 1)
 		if err != domain_product.ErrProductAlreadyActive {
@@ -825,8 +839,8 @@ func TestActivateProduct(t *testing.T) {
 				return wantErr
 			},
 		}
-
-		u := NewUseCase(repo)
+		cache := newMockCache()
+		u := NewUseCase(repo, cache)
 
 		err := u.ActivateProduct(context.Background(), 1)
 		if err != wantErr {
@@ -850,8 +864,8 @@ func TestGetSnapshot(t *testing.T) {
 				return product, nil
 			},
 		}
-
-		u := NewUseCase(repo)
+		cache := newMockCache()
+		u := NewUseCase(repo, cache)
 
 		got, err := u.GetSnapshot(context.Background(), 7)
 		if err != nil {
@@ -870,7 +884,8 @@ func TestGetSnapshot(t *testing.T) {
 	})
 
 	t.Run("invalid id", func(t *testing.T) {
-		u := NewUseCase(&repoMock{})
+		cache := newMockCache()
+		u := NewUseCase(&repoMock{}, cache)
 
 		_, err := u.GetSnapshot(context.Background(), 0)
 		if err != domain_product.ErrInvalidProductID {
@@ -885,8 +900,8 @@ func TestGetSnapshot(t *testing.T) {
 				return nil, wantErr
 			},
 		}
-
-		u := NewUseCase(repo)
+		cache := newMockCache()
+		u := NewUseCase(repo, cache)
 
 		_, err := u.GetSnapshot(context.Background(), 1)
 		if err != wantErr {
@@ -910,8 +925,8 @@ func TestEnsureAvailable(t *testing.T) {
 				return product, nil
 			},
 		}
-
-		u := NewUseCase(repo)
+		cache := newMockCache()
+		u := NewUseCase(repo, cache)
 
 		err := u.EnsureAvailable(context.Background(), 1, 5)
 		if err != nil {
@@ -920,7 +935,8 @@ func TestEnsureAvailable(t *testing.T) {
 	})
 
 	t.Run("invalid product id", func(t *testing.T) {
-		u := NewUseCase(&repoMock{})
+		cache := newMockCache()
+		u := NewUseCase(&repoMock{}, cache)
 
 		err := u.EnsureAvailable(context.Background(), 0, 5)
 		if err != domain_product.ErrInvalidProductID {
@@ -929,7 +945,8 @@ func TestEnsureAvailable(t *testing.T) {
 	})
 
 	t.Run("invalid quantity", func(t *testing.T) {
-		u := NewUseCase(&repoMock{})
+		cache := newMockCache()
+		u := NewUseCase(&repoMock{}, cache)
 
 		err := u.EnsureAvailable(context.Background(), 1, -1)
 		if err != domain_product.ErrInvalidStock {
@@ -944,8 +961,8 @@ func TestEnsureAvailable(t *testing.T) {
 				return nil, wantErr
 			},
 		}
-
-		u := NewUseCase(repo)
+		cache := newMockCache()
+		u := NewUseCase(repo, cache)
 
 		err := u.EnsureAvailable(context.Background(), 1, 5)
 		if err != wantErr {
@@ -967,8 +984,8 @@ func TestEnsureAvailable(t *testing.T) {
 				return product, nil
 			},
 		}
-
-		u := NewUseCase(repo)
+		cache := newMockCache()
+		u := NewUseCase(repo, cache)
 
 		err := u.EnsureAvailable(context.Background(), 1, 5)
 		if err != domain_product.ErrInactiveProduct {
@@ -990,8 +1007,8 @@ func TestEnsureAvailable(t *testing.T) {
 				return product, nil
 			},
 		}
-
-		u := NewUseCase(repo)
+		cache := newMockCache()
+		u := NewUseCase(repo, cache)
 
 		err := u.EnsureAvailable(context.Background(), 1, 11)
 		if err != domain_product.ErrInsufficientStock {

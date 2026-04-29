@@ -51,7 +51,8 @@ func (m *productRepoMock) Update(ctx context.Context, product *domain_product.Pr
 }
 
 func newProductHandler(repo domain_product.Repository) *ProductHandler {
-	usecase := application_product.NewUseCase(repo)
+	cache := newMockCache()
+	usecase := application_product.NewUseCase(repo, cache)
 	logger := logrus.New()
 	logger.SetOutput(bytes.NewBuffer(nil))
 	return NewProductHandler(usecase, logger)

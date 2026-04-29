@@ -130,7 +130,7 @@ func (h *ProductHandler) GetProduct(w http.ResponseWriter, r *http.Request) {
 		h.writeError(w, r, err, mapError(err))
 		return
 	}
-	resp := ToProductDTO(product)
+	resp := ToProductDTO(&product)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
@@ -148,7 +148,7 @@ func (h *ProductHandler) GetProducts(w http.ResponseWriter, r *http.Request) {
 	}
 	productsDTO := make([]ProductDTO, 0, len(products))
 	for _, product := range products {
-		productDTO := ToProductDTO(product)
+		productDTO := ToProductDTO(&product)
 		productsDTO = append(productsDTO, productDTO)
 	}
 

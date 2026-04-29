@@ -18,6 +18,7 @@ Backend сервис для управления заказами и товар�
 - Работа с PostgreSQL
 - Миграции базы данных
 - Контейнеризация через Docker
+- Кэширование данных о товарах с использованием Redis
 
 ---
 
@@ -51,6 +52,7 @@ Backend сервис для управления заказами и товар�
 - SQL миграции
 - Context propagation
 - Error wrapping
+- Redis
 
 ---
 
@@ -64,6 +66,10 @@ Backend сервис для управления заказами и товар�
 - Repository pattern для работы с данными
 - Middleware для логирования HTTP-запросов
 - Graceful shutdown сервера
+- Реализовано кэширование по паттерну cache-aside
+- Инвалидация кэша при изменении товаров
+- Fallback на PostgreSQL при недоступности Redis
+- Логирование операций кэша через decorator
 
 ---
 
@@ -73,8 +79,8 @@ Backend сервис для управления заказами и товар�
 cmd/app              # точка входа
 internal/
   domain/            # доменная модель
-  application/       # use cases
-  infrastructure/    # база данных, репозитории
+  application/       # use cases и ports
+  infrastructure/    # PostgreSQL, Redis, репозитории
   transport/http/    # HTTP слой (handlers, middleware)
 migrations/          # SQL миграции
 ```
@@ -88,7 +94,7 @@ migrations/          # SQL миграции
 ### Основные команды:
 
 ```bash
-make docker-up      # сборка и запуск сервиса (app + postgres)
+make docker-up      # сборка и запуск сервиса (app + postgres + redis)
 make docker-down    # остановка контейнеров
 make docker-logs    # просмотр логов
 
@@ -258,7 +264,8 @@ go test ./...
 ## 🔮 Дальнейшее развитие
 
 - Управление складскими остатками
-- Кэширование (Redis)
+- Расширение кэширования для заказов
+- Метрики Redis cache hit/miss
 - Асинхронная обработка заказов
 - Расширение продуктового сервиса
 - Внедрение очередей (Kafka / RabbitMQ)

@@ -6,6 +6,7 @@ services:
       - "9091:9091"
     depends_on:
       - postgres
+      - redis
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
@@ -25,6 +26,11 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
 
 volumes:
   postgres_data:

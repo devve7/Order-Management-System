@@ -5,15 +5,19 @@ import (
 	"Order-Management-System/internal/application/ports"
 	domain_product "Order-Management-System/internal/domain/product"
 	"context"
+	"encoding/json"
+	"fmt"
 )
 
 type UseCase struct {
-	repo domain_product.Repository
+	repo  domain_product.Repository
+	cache ports.Cache
 }
 
-func NewUseCase(repo domain_product.Repository) *UseCase {
+func NewUseCase(repo domain_product.Repository, cache ports.Cache) *UseCase {
 	return &UseCase{
-		repo: repo,
+		repo:  repo,
+		cache: cache,
 	}
 }
 
@@ -43,42 +47,70 @@ func (u *UseCase) CreateProduct(
 	return int64(id), nil
 }
 
-func (u *UseCase) GetProduct(ctx context.Context, productID int64) (*ProductDTO, error) {
+func (u *UseCase) GetProduct(ctx context.Context, productID int64) (ProductDTO, error) {
 	id, err := domain_product.NewProductID(productID)
 	if err != nil {
-		return nil, err
+		return ProductDTO{}, err
 	}
+
+	cacheKey := fmt.Sprintf("product:%d", id)
+	cached, err := u.cache.Get(ctx, cacheKey)
+	if err == nil {
+		var dto ProductDTO
+		json.Unmarshal([]byte(cached), &dto)
+		return dto, nil
+	}
+
 	product, err := u.repo.Get(ctx, id)
 	if err != nil {
-		return nil, err
+		return ProductDTO{}, err
 	}
-	return &ProductDTO{
+
+	dto := ProductDTO{
 		ID:     int64(product.ID()),
 		Name:   string(product.Name()),
 		Price:  int64(product.Price()),
 		Stock:  int64(product.Stock()),
 		Active: product.Active(),
-	}, nil
+	}
+	bytes, _ := json.Marshal(dto)
+	u.cache.Set(ctx, cacheKey, string(bytes), 300)
+
+	return dto, nil
 }
 
-func (u *UseCase) GetProducts(ctx context.Context) ([]*ProductDTO, error) {
+func (u *UseCase) GetProducts(ctx context.Context) ([]ProductDTO, error) {
+	cacheKey := "products:all"
+	cached, err := u.cache.Get(ctx, cacheKey)
+	if err == nil {
+		var dtos []ProductDTO
+		if err := json.Unmarshal([]byte(cached), &dtos); err == nil {
+			return dtos, nil
+		}
+	}
+
 	products, err := u.repo.GetAll(ctx)
 	if err != nil {
 		return nil, err
 	}
-	productsDTO := make([]*ProductDTO, 0, len(products))
-	for _, product := range products {
-		productsDTO = append(productsDTO, &ProductDTO{
-			ID:     int64(product.ID()),
-			Name:   string(product.Name()),
-			Price:  int64(product.Price()),
-			Stock:  int64(product.Stock()),
-			Active: product.Active(),
+
+	dtos := make([]ProductDTO, 0, len(products))
+	for _, p := range products {
+		dtos = append(dtos, ProductDTO{
+			ID:     int64(p.ID()),
+			Name:   string(p.Name()),
+			Price:  int64(p.Price()),
+			Stock:  int64(p.Stock()),
+			Active: p.Active(),
 		})
 	}
-	return productsDTO, nil
-}
 
+	if bytes, err := json.Marshal(dtos); err == nil {
+		_ = u.cache.Set(ctx, cacheKey, string(bytes), 60)
+	}
+
+	return dtos, nil
+}
 func (u *UseCase) ChangePrice(ctx context.Context, id int64, price int64) error {
 	productID, err := domain_product.NewProductID(id)
 	if err != nil {
@@ -94,7 +126,13 @@ func (u *UseCase) ChangePrice(ctx context.Context, id int64, price int64) error 
 	}
 	product.ChangePrice(productPrice)
 	err = u.repo.Update(ctx, product)
-	return err
+	if err != nil {
+		return err
+	}
+
+	_ = u.cache.Delete(ctx, fmt.Sprintf("product:%d", productID))
+	_ = u.cache.Delete(ctx, "products:all")
+	return nil
 }
 
 func (u *UseCase) AddStock(ctx context.Context, id int64, amount int64) error {
@@ -112,7 +150,13 @@ func (u *UseCase) AddStock(ctx context.Context, id int64, amount int64) error {
 	}
 	product.AddStock(productStock)
 	err = u.repo.Update(ctx, product)
-	return err
+	if err != nil {
+		return err
+	}
+
+	_ = u.cache.Delete(ctx, fmt.Sprintf("product:%d", productID))
+	_ = u.cache.Delete(ctx, "products:all")
+	return nil
 }
 
 func (u *UseCase) RemoveStock(ctx context.Context, id int64, amount int64) error {
@@ -133,7 +177,13 @@ func (u *UseCase) RemoveStock(ctx context.Context, id int64, amount int64) error
 		return err
 	}
 	err = u.repo.Update(ctx, product)
-	return err
+	if err != nil {
+		return err
+	}
+
+	_ = u.cache.Delete(ctx, fmt.Sprintf("product:%d", productID))
+	_ = u.cache.Delete(ctx, "products:all")
+	return nil
 }
 
 func (u *UseCase) DeactivateProduct(ctx context.Context, id int64) error {
@@ -152,7 +202,13 @@ func (u *UseCase) DeactivateProduct(ctx context.Context, id int64) error {
 	}
 
 	err = u.repo.Update(ctx, product)
-	return err
+	if err != nil {
+		return err
+	}
+
+	_ = u.cache.Delete(ctx, fmt.Sprintf("product:%d", productID))
+	_ = u.cache.Delete(ctx, "products:all")
+	return nil
 }
 
 func (u *UseCase) ActivateProduct(ctx context.Context, id int64) error {
@@ -171,7 +227,13 @@ func (u *UseCase) ActivateProduct(ctx context.Context, id int64) error {
 	}
 
 	err = u.repo.Update(ctx, product)
-	return err
+	if err != nil {
+		return err
+	}
+
+	_ = u.cache.Delete(ctx, fmt.Sprintf("product:%d", productID))
+	_ = u.cache.Delete(ctx, "products:all")
+	return nil
 }
 
 func (u *UseCase) GetSnapshot(ctx context.Context, productID int64) (ports.ProductSnapshot, error) {
