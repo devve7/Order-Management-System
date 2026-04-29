@@ -3,6 +3,7 @@ package main
 import (
 	application_order "Order-Management-System/internal/application/order"
 	application_product "Order-Management-System/internal/application/product"
+	"Order-Management-System/internal/infractructure/cache"
 	"Order-Management-System/internal/infractructure/db"
 	postgres_storage "Order-Management-System/internal/infractructure/storage/postgres"
 	transport_http "Order-Management-System/internal/transport/http"
@@ -15,6 +16,7 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 )
 
@@ -42,8 +44,24 @@ func main() {
 	}
 	defer pool.Close()
 
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     os.Getenv("REDIS_ADDR"),
+		Password: os.Getenv("REDIS_PASSWORD"),
+		DB:       0,
+
+		DialTimeout:  100 * time.Millisecond,
+		ReadTimeout:  100 * time.Millisecond,
+		WriteTimeout: 100 * time.Millisecond,
+
+		MaxRetries:      0,
+		MinRetryBackoff: -1,
+		MaxRetryBackoff: -1,
+	})
+
+	cache := cache.NewRedisCache(rdb)
+
 	productRepo := postgres_storage.NewPostgresProductRepository(pool)
-	productUseCase := application_product.NewUseCase(productRepo)
+	productUseCase := application_product.NewUseCase(productRepo, cache)
 
 	orderRepo := postgres_storage.NewPostgresOrderRepository(pool)
 	orderUseCase := application_order.NewUseCase(productUseCase, orderRepo)
