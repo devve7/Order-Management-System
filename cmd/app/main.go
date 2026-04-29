@@ -58,10 +58,11 @@ func main() {
 		MaxRetryBackoff: -1,
 	})
 
-	cache := cache.NewRedisCache(rdb)
+	redisCache := cache.NewRedisCache(rdb)
+	loggingCache := cache.NewLoggingCache(redisCache, logger)
 
 	productRepo := postgres_storage.NewPostgresProductRepository(pool)
-	productUseCase := application_product.NewUseCase(productRepo, cache)
+	productUseCase := application_product.NewUseCase(productRepo, loggingCache)
 
 	orderRepo := postgres_storage.NewPostgresOrderRepository(pool)
 	orderUseCase := application_order.NewUseCase(productUseCase, orderRepo)
