@@ -1,11 +1,12 @@
-.PHONY: build run docker-up docker-down logs test migrate-up migrate-down
+include .env
+export
 
-APP_NAME=oms-app
+.PHONY: build run docker-up docker-down docker-logs test migrate-up migrate-down clean
 
 # ---------- Local ----------
 
 build:
-	go build -o $(APP_NAME) ./cmd/app
+	go build -o ${APP_NAME} ./cmd/app
 
 run:
 	go run ./cmd/app/main.go
@@ -29,12 +30,12 @@ test:
 # ---------- Migrations ----------
 
 migrate-up:
-	migrate -path migrations -database "$$DB_DSN" up
+	migrate -path migrations -database "${DB_DSN}" up
 
 migrate-down:
-	migrate -path migrations -database "$$DB_DSN" down
+	migrate -path migrations -database "${DB_DSN}" down
 
 # ---------- Cleanup ----------
 
 clean:
-	rm -f $(APP_NAME)
+	rm -f ${APP_NAME}
