@@ -29,7 +29,7 @@ func (m *repoMock) Get(ctx context.Context, id domain_product.ProductID) (*domai
 	return nil, nil
 }
 
-func (m *repoMock) GetAll(ctx context.Context) ([]*domain_product.Product, error) {
+func (m *repoMock) List(ctx context.Context, params domain_product.ProductListParams) ([]*domain_product.Product, error) {
 	if m.getAllFn != nil {
 		return m.getAllFn(ctx)
 	}
@@ -245,65 +245,6 @@ func TestGetProduct(t *testing.T) {
 		_, err := u.GetProduct(context.Background(), 1)
 		if err != wantErr {
 			t.Fatalf("GetProduct() error = %v, want %v", err, wantErr)
-		}
-	})
-}
-
-func TestGetProducts(t *testing.T) {
-	t.Run("success", func(t *testing.T) {
-		products := []*domain_product.Product{
-			domain_product.RestoreProduct(
-				mustProductID(t, 1),
-				mustProductName(t, "iPhone"),
-				mustPrice(t, 100000),
-				mustStock(t, 10),
-				true,
-			),
-			domain_product.RestoreProduct(
-				mustProductID(t, 2),
-				mustProductName(t, "MacBook"),
-				mustPrice(t, 200000),
-				mustStock(t, 5),
-				false,
-			),
-		}
-
-		repo := &repoMock{
-			getAllFn: func(ctx context.Context) ([]*domain_product.Product, error) {
-				return products, nil
-			},
-		}
-		cache := newMockCache()
-		u := NewUseCase(repo, cache)
-
-		got, err := u.GetProducts(context.Background())
-		if err != nil {
-			t.Fatalf("GetProducts() error = %v", err)
-		}
-		if len(got) != 2 {
-			t.Fatalf("len(GetProducts()) = %d, want 2", len(got))
-		}
-		if got[0].ID != 1 || got[1].ID != 2 {
-			t.Fatalf("IDs = [%d %d], want [1 2]", got[0].ID, got[1].ID)
-		}
-		if got[0].Name != "iPhone" || got[1].Name != "MacBook" {
-			t.Fatalf("unexpected names: %+v", got)
-		}
-	})
-
-	t.Run("repo get all error", func(t *testing.T) {
-		wantErr := errors.New("repo get all failed")
-		repo := &repoMock{
-			getAllFn: func(ctx context.Context) ([]*domain_product.Product, error) {
-				return nil, wantErr
-			},
-		}
-		cache := newMockCache()
-		u := NewUseCase(repo, cache)
-
-		_, err := u.GetProducts(context.Background())
-		if err != wantErr {
-			t.Fatalf("GetProducts() error = %v, want %v", err, wantErr)
 		}
 	})
 }

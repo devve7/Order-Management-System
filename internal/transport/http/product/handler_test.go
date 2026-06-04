@@ -36,7 +36,7 @@ func (m *productRepoMock) Get(ctx context.Context, id domain_product.ProductID) 
 	return nil, nil
 }
 
-func (m *productRepoMock) GetAll(ctx context.Context) ([]*domain_product.Product, error) {
+func (m *productRepoMock) List(ctx context.Context, params domain_product.ProductListParams) ([]*domain_product.Product, error) {
 	if m.getAllFn != nil {
 		return m.getAllFn(ctx)
 	}
