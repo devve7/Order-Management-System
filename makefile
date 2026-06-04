@@ -6,41 +6,41 @@ export
 # ---------- Local ----------
 
 build:
-	go build -o ${APP_NAME} ./cmd/app
+	@go build -o ${APP_NAME} ./cmd/app
 
 run:
-	go run ./cmd/app/main.go
+	@go run ./cmd/app/main.go
 
 # ---------- Docker ----------
 
 docker-up:
-	docker-compose up --build
+	@docker-compose up --build
 
 docker-down:
-	docker-compose down
+	@docker-compose down
 
 docker-logs:
-	docker-compose logs -f
+	@docker-compose logs -f
 
 # ---------- Tests ----------
 
 test:
-	go test ./...
+	@go test ./...
 
 # ---------- Migrations ----------
 
 migrate-up:
-	migrate -path migrations -database "${DB_DSN}" up
+	@migrate -path migrations -database "${DB_DSN}" up
 
 migrate-down:
-	migrate -path migrations -database "${DB_DSN}" down
+	@migrate -path migrations -database "${DB_DSN}" down
 
 # ---------- Seed ----------
 
 seed:
-	docker-compose exec -T postgres psql -U ${POSTGRES_USER} -d ${POSTGRES_DB} < seeds/001_seed_dev_data.sql
+	@docker-compose exec -T postgres psql -U ${POSTGRES_USER} -d ${POSTGRES_DB} < seeds/001_seed_dev_data.sql
 
 # ---------- Cleanup ----------
 
 clean:
-	rm -f ${APP_NAME}
+	@rm -f ${APP_NAME}
