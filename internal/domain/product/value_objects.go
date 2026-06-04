@@ -44,7 +44,7 @@ type ProductListParams struct {
 }
 
 const defaultProductLimit int64 = 20
-const maxProductLimit int64 = 3
+const maxProductLimit int64 = 100
 
 func NewProductListParams(cursor *int64, limit *int64) (ProductListParams, error) {
 	hasCursor := false
