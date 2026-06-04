@@ -41,3 +41,8 @@ type PriceDTO struct {
 type StockAmountDTO struct {
 	StockAmount int64 `json:"amount"`
 }
+
+type ProductListQuery struct {
+	Cursor *int64
+	Limit  *int64
+}

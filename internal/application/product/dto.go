@@ -7,3 +7,8 @@ type ProductDTO struct {
 	Stock  int64
 	Active bool
 }
+
+type ProductListParamsDTO struct {
+	Cursor *int64
+	Limit  *int64
+}

@@ -100,16 +100,34 @@ func (r *PostgresProductRepository) Get(ctx context.Context, id domain_product.P
 	return restoreProduct(rawProduct)
 }
 
-func (r *PostgresProductRepository) GetAll(ctx context.Context) ([]*domain_product.Product, error) {
+func (r *PostgresProductRepository) List(ctx context.Context, params domain_product.ProductListParams) ([]*domain_product.Product, error) {
 	products := make([]*domain_product.Product, 0)
-	query := `
-		SELECT id, name, price_cents, stock, active 
-		FROM products
-		ORDER BY id
-	`
-	rows, err := r.pool.Query(ctx, query)
-	if err != nil {
-		return nil, fmt.Errorf("get products: %w", err)
+	var query string
+	var rows pgx.Rows
+	var err error
+	if params.HasCursor() {
+		query = `
+			SELECT id, name, price_cents, stock, active 
+			FROM products
+			WHERE id > $1
+			ORDER BY id
+			LIMIT $2
+		`
+		rows, err = r.pool.Query(ctx, query, params.GetCursor(), params.GetLimit())
+		if err != nil {
+			return nil, fmt.Errorf("get products: %w", err)
+		}
+	} else {
+		query = `
+			SELECT id, name, price_cents, stock, active 
+			FROM products
+			ORDER BY id
+			LIMIT $1
+		`
+		rows, err = r.pool.Query(ctx, query, params.GetLimit())
+		if err != nil {
+			return nil, fmt.Errorf("get products: %w", err)
+		}
 	}
 	defer rows.Close()
 	for rows.Next() {
