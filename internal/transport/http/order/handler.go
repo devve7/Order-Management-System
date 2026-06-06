@@ -36,7 +36,9 @@ func mapError(err error) int {
 		errors.Is(err, domain_product.ErrInvalidPrice),
 		errors.Is(err, domain_product.ErrInvalidProductID),
 		errors.Is(err, domain_product.ErrInvalidProductName),
-		errors.Is(err, domain_product.ErrInvalidStock):
+		errors.Is(err, domain_product.ErrInvalidStock),
+		errors.Is(err, domain_order.ErrInvalidOrderCursor),
+		errors.Is(err, domain_order.ErrInvalidOrderLimit):
 		return http.StatusBadRequest
 
 	case errors.Is(err, domain_order.ErrOrderNotFound),
@@ -149,8 +151,33 @@ func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderHandler) GetOrders(w http.ResponseWriter, r *http.Request) {
+	var params OrderListQuery
+	query := r.URL.Query()
+	if query.Has("limit") {
+		limitStr := query.Get("limit")
+		limit, err := strconv.ParseInt(limitStr, 10, 64)
+		if err != nil {
+			h.writeError(w, r, err, http.StatusBadRequest)
+			return
+		}
+		params.Limit = &limit
+	}
+	if query.Has("after_id") {
+		cursorStr := query.Get("after_id")
+		cursor, err := strconv.ParseInt(cursorStr, 10, 64)
+		if err != nil {
+			h.writeError(w, r, err, http.StatusBadRequest)
+			return
+		}
+		params.Cursor = &cursor
+	}
+	paramsDTO := application_order.OrderListParamsDTO{
+		Cursor: params.Cursor,
+		Limit:  params.Limit,
+	}
+
 	ctx := r.Context()
-	orders, err := h.usecase.GetOrders(ctx)
+	orders, err := h.usecase.GetOrders(ctx, paramsDTO)
 	if err != nil {
 		h.writeError(w, r, err, mapError(err))
 		return

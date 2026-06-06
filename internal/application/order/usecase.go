@@ -173,8 +173,12 @@ func (u *UseCase) GetOrder(ctx context.Context, rawOrderID int64) (OrderDTO, err
 	return orderDTO, nil
 }
 
-func (u *UseCase) GetOrders(ctx context.Context) ([]OrderDTO, error) {
-	orders, err := u.repo.GetAll(ctx)
+func (u *UseCase) GetOrders(ctx context.Context, paramsDTO OrderListParamsDTO) ([]OrderDTO, error) {
+	params, err := domain_order.NewOrderListParams(paramsDTO.Cursor, paramsDTO.Limit)
+	if err != nil {
+		return nil, err
+	}
+	orders, err := u.repo.List(ctx, params)
 	if err != nil {
 		return nil, err
 	}

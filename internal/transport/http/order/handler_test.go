@@ -39,7 +39,7 @@ func (m *orderRepoMock) Get(ctx context.Context, orderID domain_order.OrderID) (
 	return nil, nil
 }
 
-func (m *orderRepoMock) GetAll(ctx context.Context) ([]*domain_order.Order, error) {
+func (m *orderRepoMock) List(ctx context.Context, params domain_order.OrderListParams) ([]*domain_order.Order, error) {
 	if m.getAllFn != nil {
 		return m.getAllFn(ctx)
 	}

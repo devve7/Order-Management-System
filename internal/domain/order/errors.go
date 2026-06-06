@@ -23,4 +23,7 @@ var (
 	ErrOrderItemNotFound = errors.New("order item not found")
 
 	ErrConcurrentUpdate = errors.New("order version conflict")
+
+	ErrInvalidOrderLimit  = errors.New("invalid order limit")
+	ErrInvalidOrderCursor = errors.New("invalid order cursor")
 )

@@ -79,17 +79,12 @@ func (u *UseCase) GetProduct(ctx context.Context, productID int64) (ProductDTO, 
 	return dto, nil
 }
 
-func (u *UseCase) GetProducts(ctx context.Context) ([]ProductDTO, error) {
-	cacheKey := "products:all"
-	cached, err := u.cache.Get(ctx, cacheKey)
-	if err == nil {
-		var dtos []ProductDTO
-		if err := json.Unmarshal([]byte(cached), &dtos); err == nil {
-			return dtos, nil
-		}
+func (u *UseCase) GetProducts(ctx context.Context, paramsDTO ProductListParamsDTO) ([]ProductDTO, error) {
+	params, err := domain_product.NewProductListParams(paramsDTO.Cursor, paramsDTO.Limit)
+	if err != nil {
+		return nil, err
 	}
-
-	products, err := u.repo.GetAll(ctx)
+	products, err := u.repo.List(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -105,12 +100,9 @@ func (u *UseCase) GetProducts(ctx context.Context) ([]ProductDTO, error) {
 		})
 	}
 
-	if bytes, err := json.Marshal(dtos); err == nil {
-		_ = u.cache.Set(ctx, cacheKey, string(bytes), 60)
-	}
-
 	return dtos, nil
 }
+
 func (u *UseCase) ChangePrice(ctx context.Context, id int64, price int64) error {
 	productID, err := domain_product.NewProductID(id)
 	if err != nil {

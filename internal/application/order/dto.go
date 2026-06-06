@@ -44,3 +44,8 @@ func ToOrderDTO(order *domain_order.Order) OrderDTO {
 		Total:      int64(order.Total()),
 	}
 }
+
+type OrderListParamsDTO struct {
+	Cursor *int64
+	Limit  *int64
+}

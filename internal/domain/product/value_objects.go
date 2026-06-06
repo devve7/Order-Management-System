@@ -35,3 +35,60 @@ func NewStock(stock int64) (Stock, error) {
 	}
 	return Stock(stock), nil
 }
+
+type ProductListParams struct {
+	cursor    ProductID
+	hasCursor bool
+
+	limit int64
+}
+
+const defaultProductLimit int64 = 20
+const maxProductLimit int64 = 100
+
+func NewProductListParams(cursor *int64, limit *int64) (ProductListParams, error) {
+	hasCursor := false
+	var cursorValue ProductID = 0
+	if cursor != nil {
+		hasCursor = true
+		productID, err := NewProductID(*cursor)
+		if err != nil {
+			return ProductListParams{}, ErrInvalidProductCursor
+		}
+		cursorValue = productID
+	}
+	if limit == nil {
+		return ProductListParams{
+			cursor:    cursorValue,
+			hasCursor: hasCursor,
+			limit:     defaultProductLimit,
+		}, nil
+	}
+	if *limit <= 0 {
+		return ProductListParams{}, ErrInvalidProductLimit
+	}
+	if *limit > maxProductLimit {
+		return ProductListParams{
+			cursor:    cursorValue,
+			hasCursor: hasCursor,
+			limit:     maxProductLimit,
+		}, nil
+	}
+	return ProductListParams{
+		cursor:    cursorValue,
+		hasCursor: hasCursor,
+		limit:     *limit,
+	}, nil
+}
+
+func (p *ProductListParams) GetCursor() ProductID {
+	return p.cursor
+}
+
+func (p *ProductListParams) GetLimit() int64 {
+	return p.limit
+}
+
+func (p *ProductListParams) HasCursor() bool {
+	return p.hasCursor
+}

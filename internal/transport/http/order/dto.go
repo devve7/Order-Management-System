@@ -60,3 +60,8 @@ type NewOrderItemDTO struct {
 	ProductID *int64 `json:"product_id"`
 	Quantity  *int64 `json:"quantity"`
 }
+
+type OrderListQuery struct {
+	Cursor *int64
+	Limit  *int64
+}

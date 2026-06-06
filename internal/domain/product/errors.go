@@ -11,4 +11,7 @@ var (
 	ErrInactiveProduct      = errors.New("product is inactive")
 	ErrInsufficientStock    = errors.New("insufficient stock")
 	ErrProductAlreadyActive = errors.New("product already active")
+
+	ErrInvalidProductCursor = errors.New("invalid product cursor")
+	ErrInvalidProductLimit  = errors.New("invalid product limit")
 )

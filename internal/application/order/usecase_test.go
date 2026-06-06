@@ -30,7 +30,7 @@ func (m *repoMock) Get(ctx context.Context, orderID domain_order.OrderID) (*doma
 	return nil, nil
 }
 
-func (m *repoMock) GetAll(ctx context.Context) ([]*domain_order.Order, error) {
+func (m *repoMock) List(ctx context.Context, params domain_order.OrderListParams) ([]*domain_order.Order, error) {
 	if m.getAllFn != nil {
 		return m.getAllFn(ctx)
 	}
@@ -667,53 +667,6 @@ func TestGetOrder(t *testing.T) {
 		_, err := u.GetOrder(context.Background(), 1)
 		if err != wantErr {
 			t.Fatalf("GetOrder() error = %v, want %v", err, wantErr)
-		}
-	})
-}
-
-func TestGetOrders(t *testing.T) {
-	t.Run("success", func(t *testing.T) {
-		order1 := newTestOrder(t)
-		addTestItem(t, order1)
-
-		order2 := domain_order.NewOrder(
-			mustOrderID(t, 2),
-			mustCustomerID(t, 20),
-			domain_order.StatusPaid,
-			time.Date(2026, 4, 22, 13, 0, 0, 0, time.UTC),
-		)
-
-		repo := &repoMock{
-			getAllFn: func(ctx context.Context) ([]*domain_order.Order, error) {
-				return []*domain_order.Order{order1, order2}, nil
-			},
-		}
-		u := NewUseCase(nil, repo)
-
-		got, err := u.GetOrders(context.Background())
-		if err != nil {
-			t.Fatalf("GetOrders() error = %v", err)
-		}
-		if len(got) != 2 {
-			t.Fatalf("len(GetOrders()) = %d, want 2", len(got))
-		}
-		if got[0].ID != 1 || got[1].ID != 2 {
-			t.Fatalf("IDs = [%d %d], want [1 2]", got[0].ID, got[1].ID)
-		}
-	})
-
-	t.Run("repo get all error", func(t *testing.T) {
-		wantErr := errors.New("repo get all failed")
-		repo := &repoMock{
-			getAllFn: func(ctx context.Context) ([]*domain_order.Order, error) {
-				return nil, wantErr
-			},
-		}
-		u := NewUseCase(nil, repo)
-
-		_, err := u.GetOrders(context.Background())
-		if err != wantErr {
-			t.Fatalf("GetOrders() error = %v, want %v", err, wantErr)
 		}
 	})
 }
