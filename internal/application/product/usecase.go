@@ -79,12 +79,12 @@ func (u *UseCase) GetProduct(ctx context.Context, productID int64) (ProductDTO, 
 	return dto, nil
 }
 
-func (u *UseCase) GetProducts(ctx context.Context, params ProductListParamsDTO) ([]ProductDTO, error) {
-	listParam, err := domain_product.NewProductListParams(params.Cursor, params.Limit)
+func (u *UseCase) GetProducts(ctx context.Context, paramsDTO ProductListParamsDTO) ([]ProductDTO, error) {
+	params, err := domain_product.NewProductListParams(paramsDTO.Cursor, paramsDTO.Limit)
 	if err != nil {
 		return nil, err
 	}
-	products, err := u.repo.List(ctx, listParam)
+	products, err := u.repo.List(ctx, params)
 	if err != nil {
 		return nil, err
 	}
