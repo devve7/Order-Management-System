@@ -36,7 +36,9 @@ func mapError(err error) int {
 		errors.Is(err, domain_product.ErrInvalidPrice),
 		errors.Is(err, domain_product.ErrInvalidProductID),
 		errors.Is(err, domain_product.ErrInvalidProductName),
-		errors.Is(err, domain_product.ErrInvalidStock):
+		errors.Is(err, domain_product.ErrInvalidStock),
+		errors.Is(err, domain_order.ErrInvalidOrderCursor),
+		errors.Is(err, domain_order.ErrInvalidOrderLimit):
 		return http.StatusBadRequest
 
 	case errors.Is(err, domain_order.ErrOrderNotFound),
