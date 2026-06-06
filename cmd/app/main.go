@@ -15,7 +15,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 )
@@ -26,10 +25,6 @@ func main() {
 		PrettyPrint:     true,
 		TimestampFormat: "2006-01-02 15:04:05",
 	})
-
-	if err := godotenv.Load(); err != nil {
-		logger.Fatalf("failed to load .env: %v", err)
-	}
 
 	dsn := os.Getenv("DB_DSN")
 	if dsn == "" {
