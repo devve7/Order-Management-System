@@ -222,17 +222,36 @@ func (r *PostgresOrderRepository) Get(ctx context.Context, id domain_order.Order
 	return order, nil
 }
 
-func (r *PostgresOrderRepository) GetAll(ctx context.Context) ([]*domain_order.Order, error) {
-	query := `
+func (r *PostgresOrderRepository) List(ctx context.Context, params domain_order.OrderListParams) ([]*domain_order.Order, error) {
+	var rows pgx.Rows
+	var err error
+	if params.HasCursor() {
+		query := `
+		SELECT id, customer_id, status, created_at, next_item_id, version
+		FROM orders
+		WHERE id > $1
+		ORDER BY id
+		LIMIT $2
+	`
+
+		rows, err = r.pool.Query(ctx, query, params.GetCursor(), params.GetLimit())
+		if err != nil {
+			return nil, fmt.Errorf("get orders: %w", err)
+		}
+	} else {
+		query := `
 		SELECT id, customer_id, status, created_at, next_item_id, version
 		FROM orders
 		ORDER BY id
+		LIMIT $1
 	`
 
-	rows, err := r.pool.Query(ctx, query)
-	if err != nil {
-		return nil, fmt.Errorf("get all orders: %w", err)
+		rows, err = r.pool.Query(ctx, query, params.GetLimit())
+		if err != nil {
+			return nil, fmt.Errorf("get orders: %w", err)
+		}
 	}
+
 	defer rows.Close()
 
 	rawOrders := make([]rawOrder, 0)

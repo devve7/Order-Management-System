@@ -102,11 +102,10 @@ func (r *PostgresProductRepository) Get(ctx context.Context, id domain_product.P
 
 func (r *PostgresProductRepository) List(ctx context.Context, params domain_product.ProductListParams) ([]*domain_product.Product, error) {
 	products := make([]*domain_product.Product, 0)
-	var query string
 	var rows pgx.Rows
 	var err error
 	if params.HasCursor() {
-		query = `
+		query := `
 			SELECT id, name, price_cents, stock, active 
 			FROM products
 			WHERE id > $1
@@ -118,7 +117,7 @@ func (r *PostgresProductRepository) List(ctx context.Context, params domain_prod
 			return nil, fmt.Errorf("get products: %w", err)
 		}
 	} else {
-		query = `
+		query := `
 			SELECT id, name, price_cents, stock, active 
 			FROM products
 			ORDER BY id
