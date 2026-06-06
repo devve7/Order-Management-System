@@ -151,8 +151,16 @@ GET /orders/{id}
 
 ---
 
-#### Get all orders
+#### List orders
+
 GET /orders
+
+Query parameters:
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| limit | int | Number of orders to return |
+| after_id | int | Cursor for pagination |
 
 ---
 
@@ -210,8 +218,16 @@ GET /products/{id}
 
 ---
 
-#### Get all products
+#### List products
+
 GET /products
+
+Query parameters:
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| limit | int | Number of orders to return |
+| after_id | int | Cursor for pagination |
 
 ---
 
