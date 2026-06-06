@@ -71,3 +71,48 @@ func NewOrderVersion(v int64) (OrderVersion, error) {
 	}
 	return OrderVersion(v), nil
 }
+
+type OrderListParams struct {
+	cursor    OrderID
+	hasCursor bool
+
+	limit int64
+}
+
+const defaultOrderLimit int64 = 20
+const maxOrderLimit int64 = 100
+
+func NewOrderListParams(cursor *int64, limit *int64) (OrderListParams, error) {
+	hasCursor := false
+	var cursorValue OrderID = 0
+	if cursor != nil {
+		hasCursor = true
+		orderID, err := NewOrderID(*cursor)
+		if err != nil {
+			return OrderListParams{}, ErrInvalidOrderCursor
+		}
+		cursorValue = orderID
+	}
+	if limit == nil {
+		return OrderListParams{
+			cursor:    cursorValue,
+			hasCursor: hasCursor,
+			limit:     defaultOrderLimit,
+		}, nil
+	}
+	if *limit <= 0 {
+		return OrderListParams{}, ErrInvalidOrderLimit
+	}
+	if *limit > maxOrderLimit {
+		return OrderListParams{
+			cursor:    cursorValue,
+			hasCursor: hasCursor,
+			limit:     maxOrderLimit,
+		}, nil
+	}
+	return OrderListParams{
+		cursor:    cursorValue,
+		hasCursor: hasCursor,
+		limit:     *limit,
+	}, nil
+}

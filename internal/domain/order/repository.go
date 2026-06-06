@@ -11,5 +11,5 @@ type Repository interface {
 
 	Update(ctx context.Context, order *Order) error
 
-	GetAll(ctx context.Context) ([]*Order, error)
+	List(ctx context.Context, params OrderListParams) ([]*Order, error)
 }
