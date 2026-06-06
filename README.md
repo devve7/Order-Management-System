@@ -226,7 +226,7 @@ Query parameters:
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| limit | int | Number of orders to return |
+| limit | int | Number of products to return |
 | after_id | int | Cursor for pagination |
 
 ---
