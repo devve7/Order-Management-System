@@ -116,3 +116,15 @@ func NewOrderListParams(cursor *int64, limit *int64) (OrderListParams, error) {
 		limit:     *limit,
 	}, nil
 }
+
+func (p *OrderListParams) GetCursor() OrderID {
+	return p.cursor
+}
+
+func (p *OrderListParams) GetLimit() int64 {
+	return p.limit
+}
+
+func (p *OrderListParams) HasCursor() bool {
+	return p.hasCursor
+}
