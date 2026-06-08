@@ -3,10 +3,12 @@ package main
 import (
 	application_order "Order-Management-System/internal/application/order"
 	application_product "Order-Management-System/internal/application/product"
+	health "Order-Management-System/internal/health"
 	"Order-Management-System/internal/infractructure/cache"
 	"Order-Management-System/internal/infractructure/db"
 	postgres_storage "Order-Management-System/internal/infractructure/storage/postgres"
 	transport_http "Order-Management-System/internal/transport/http"
+	transport_health "Order-Management-System/internal/transport/http/health"
 	transport_http_order "Order-Management-System/internal/transport/http/order"
 	transport_http_product "Order-Management-System/internal/transport/http/product"
 	"context"
@@ -53,6 +55,11 @@ func main() {
 		MaxRetryBackoff: -1,
 	})
 
+	postgresChecker := health.NewPostgresChecker(pool)
+	redisChecker := health.NewRedisChecker(rdb)
+	healthChecker := health.NewChecker(redisChecker, postgresChecker)
+	healthHandler := transport_health.NewHealthHandler(healthChecker)
+
 	redisCache := cache.NewRedisCache(rdb)
 	loggingCache := cache.NewLoggingCache(redisCache, logger)
 
@@ -64,7 +71,7 @@ func main() {
 
 	orderHandler := transport_http_order.NewOrderHandler(orderUseCase, logger)
 	productHandler := transport_http_product.NewProductHandler(productUseCase, logger)
-	router := transport_http.NewRouter(orderHandler, productHandler, logger)
+	router := transport_http.NewRouter(orderHandler, productHandler, healthHandler, logger)
 
 	server := transport_http.NewServer(":9091", router, logger)
 	go func() {

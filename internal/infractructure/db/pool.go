@@ -1,4 +1,4 @@
-// Package postgres
+// Package db
 package db
 
 import (
