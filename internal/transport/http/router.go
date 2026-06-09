@@ -2,6 +2,7 @@
 package http
 
 import (
+	health "Order-Management-System/internal/transport/http/health"
 	"Order-Management-System/internal/transport/http/middleware"
 	http_order "Order-Management-System/internal/transport/http/order"
 	http_product "Order-Management-System/internal/transport/http/product"
@@ -11,10 +12,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func NewRouter(orderHandler *http_order.OrderHandler, productHandler *http_product.ProductHandler, logger *logrus.Logger) http.Handler {
+func NewRouter(orderHandler *http_order.OrderHandler, productHandler *http_product.ProductHandler, healthHandler *health.HealthHandler, logger *logrus.Logger) http.Handler {
 	router := mux.NewRouter()
 
 	router.Use(middleware.LoggingMiddleWare(logger))
+
+	router.HandleFunc("/health", healthHandler.Health).Methods(http.MethodGet)
 
 	router.HandleFunc("/orders", orderHandler.CreateOrder).Methods(http.MethodPost)
 	router.HandleFunc("/orders/{id:[0-9]+}", orderHandler.GetOrder).Methods(http.MethodGet)
