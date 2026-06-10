@@ -23,3 +23,7 @@ func (r Role) IsAdmin() bool {
 func (r Role) IsUser() bool {
 	return r == RoleUser
 }
+
+func (r Role) String() string {
+	return string(r)
+}
