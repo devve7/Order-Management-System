@@ -40,3 +40,7 @@ func (u *User) PasswordHash() PasswordHash {
 func (u *User) Role() Role {
 	return u.role
 }
+
+func (u *User) HasID() bool {
+	return u.id > 0
+}
