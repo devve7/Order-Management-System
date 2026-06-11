@@ -9,6 +9,10 @@ import (
 
 type BcryptPasswordHasher struct{}
 
+func NewBcryptPasswordHasher() *BcryptPasswordHasher {
+	return &BcryptPasswordHasher{}
+}
+
 func (h *BcryptPasswordHasher) Hash(password string) (domain_user.PasswordHash, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -22,5 +26,5 @@ func (h *BcryptPasswordHasher) Hash(password string) (domain_user.PasswordHash, 
 }
 
 func (h *BcryptPasswordHasher) Compare(password string, hash domain_user.PasswordHash) error {
-	return bcrypt.CompareHashAndPassword([]byte(password), []byte(hash))
+	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 }

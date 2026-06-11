@@ -2,6 +2,7 @@
 package http
 
 import (
+	"Order-Management-System/internal/transport/http/auth"
 	health "Order-Management-System/internal/transport/http/health"
 	"Order-Management-System/internal/transport/http/middleware"
 	http_order "Order-Management-System/internal/transport/http/order"
@@ -12,7 +13,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func NewRouter(orderHandler *http_order.OrderHandler, productHandler *http_product.ProductHandler, healthHandler *health.HealthHandler, logger *logrus.Logger) http.Handler {
+func NewRouter(
+	orderHandler *http_order.OrderHandler,
+	productHandler *http_product.ProductHandler,
+	healthHandler *health.HealthHandler,
+	authHandler *auth.AuthHandler,
+	authMiddleware *middleware.AuthMiddleware,
+	logger *logrus.Logger,
+) http.Handler {
 	router := mux.NewRouter()
 
 	router.Use(middleware.LoggingMiddleWare(logger))
@@ -39,6 +47,12 @@ func NewRouter(orderHandler *http_order.OrderHandler, productHandler *http_produ
 	router.HandleFunc("/products/{id:[0-9]+}/deactivate", productHandler.DeactivateProduct).Methods(http.MethodPost)
 	router.HandleFunc("/products/{id:[0-9]+}/stock/add", productHandler.AddStock).Methods(http.MethodPost)
 	router.HandleFunc("/products/{id:[0-9]+}/stock/remove", productHandler.RemoveStock).Methods(http.MethodPost)
+
+	router.HandleFunc("/auth/register", authHandler.Register).Methods(http.MethodPost)
+	router.HandleFunc("/auth/login", authHandler.Login).Methods(http.MethodPost)
+
+	router.Handle("/me", authMiddleware.RequireAuth(http.HandlerFunc(authHandler.Me))).
+		Methods(http.MethodGet)
 
 	return router
 }
