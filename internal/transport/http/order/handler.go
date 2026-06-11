@@ -5,6 +5,7 @@ import (
 	application_order "Order-Management-System/internal/application/order"
 	domain_order "Order-Management-System/internal/domain/order"
 	domain_product "Order-Management-System/internal/domain/product"
+	"Order-Management-System/internal/transport/http/middleware"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -96,21 +97,15 @@ func (h *OrderHandler) writeError(w http.ResponseWriter, r *http.Request, err er
 }
 
 func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
-	var req CustomerIDDTO
-	decoder := json.NewDecoder(r.Body)
-	decoder.DisallowUnknownFields()
-
-	if err := decoder.Decode(&req); err != nil {
-		h.writeError(w, r, err, http.StatusBadRequest)
-		return
-	}
-
-	if req.CustomerID == nil {
-		h.writeError(w, r, errors.New("customer_id is required"), http.StatusBadRequest)
-		return
-	}
 	ctx := r.Context()
-	orderID, err := h.usecase.CreateOrder(ctx, *req.CustomerID)
+
+	actor, ok := middleware.ActorFromContext(ctx)
+	if !ok {
+		h.writeError(w, r, errors.New("unauthorized"), http.StatusUnauthorized)
+		return
+	}
+
+	orderID, err := h.usecase.CreateOrder(ctx, int64(actor.ID()))
 	if err != nil {
 		h.writeError(w, r, err, mapError(err))
 		return

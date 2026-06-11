@@ -27,16 +27,29 @@ func NewRouter(
 
 	router.HandleFunc("/health", healthHandler.Health).Methods(http.MethodGet)
 
-	router.HandleFunc("/orders", orderHandler.CreateOrder).Methods(http.MethodPost)
+	router.Handle("/orders", authMiddleware.RequireAuth(http.HandlerFunc(orderHandler.CreateOrder))).
+		Methods(http.MethodPost)
+
 	router.HandleFunc("/orders/{id:[0-9]+}", orderHandler.GetOrder).Methods(http.MethodGet)
 	router.HandleFunc("/orders", orderHandler.GetOrders).Methods(http.MethodGet)
 
-	router.HandleFunc("/orders/{id:[0-9]+}/items", orderHandler.AddItem).Methods(http.MethodPost)
-	router.HandleFunc("/orders/{id:[0-9]+}/items/{item_id:[0-9]+}", orderHandler.DeleteItem).Methods(http.MethodDelete)
+	router.Handle("/orders", authMiddleware.RequireAuth(http.HandlerFunc(orderHandler.CreateOrder))).
+		Methods(http.MethodPost)
 
-	router.HandleFunc("/orders/{id:[0-9]+}/pay", orderHandler.PayOrder).Methods(http.MethodPost)
-	router.HandleFunc("/orders/{id:[0-9]+}/ship", orderHandler.ShipOrder).Methods(http.MethodPost)
-	router.HandleFunc("/orders/{id:[0-9]+}/cancel", orderHandler.CancelOrder).Methods(http.MethodPost)
+	router.Handle("/orders/{id:[0-9]+}/items", authMiddleware.RequireAuth(http.HandlerFunc(orderHandler.AddItem))).
+		Methods(http.MethodPost)
+
+	router.Handle("/orders/{id:[0-9]+}/items/{item_id:[0-9]+}", authMiddleware.RequireAuth(http.HandlerFunc(orderHandler.DeleteItem))).
+		Methods(http.MethodDelete)
+
+	router.Handle("/orders/{id:[0-9]+}/pay", authMiddleware.RequireAuth(http.HandlerFunc(orderHandler.PayOrder))).
+		Methods(http.MethodPost)
+
+	router.Handle("/orders/{id:[0-9]+}/ship", authMiddleware.RequireAuth(http.HandlerFunc(orderHandler.ShipOrder))).
+		Methods(http.MethodPost)
+
+	router.Handle("/orders/{id:[0-9]+}/cancel", authMiddleware.RequireAuth(http.HandlerFunc(orderHandler.CancelOrder))).
+		Methods(http.MethodPost)
 
 	router.HandleFunc("/products", productHandler.CreateProduct).Methods(http.MethodPost)
 	router.HandleFunc("/products/{id:[0-9]+}", productHandler.GetProduct).Methods(http.MethodGet)
