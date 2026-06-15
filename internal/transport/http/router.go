@@ -30,8 +30,11 @@ func NewRouter(
 	router.Handle("/orders", authMiddleware.RequireAuth(http.HandlerFunc(orderHandler.CreateOrder))).
 		Methods(http.MethodPost)
 
-	router.HandleFunc("/orders/{id:[0-9]+}", orderHandler.GetOrder).Methods(http.MethodGet)
-	router.HandleFunc("/orders", orderHandler.GetOrders).Methods(http.MethodGet)
+	router.Handle("/orders/{id:[0-9]+}", authMiddleware.RequireAuth(http.HandlerFunc(orderHandler.GetOrder))).
+		Methods(http.MethodGet)
+
+	router.Handle("/orders", authMiddleware.RequireAuth(http.HandlerFunc(orderHandler.GetOrders))).
+		Methods(http.MethodGet)
 
 	router.Handle("/orders", authMiddleware.RequireAuth(http.HandlerFunc(orderHandler.CreateOrder))).
 		Methods(http.MethodPost)

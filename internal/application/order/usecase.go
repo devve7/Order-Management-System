@@ -2,6 +2,7 @@
 package order
 
 import (
+	"Order-Management-System/internal/application/auth"
 	"Order-Management-System/internal/application/ports"
 	domain_order "Order-Management-System/internal/domain/order"
 	"context"
@@ -19,8 +20,19 @@ func NewUseCase(productService ports.ProductForOrder, repo domain_order.Reposito
 	}
 }
 
-func (u *UseCase) CreateOrder(ctx context.Context, rawCustomerID int64) (domain_order.OrderID, error) {
-	customerID, err := domain_order.NewCustomerID(rawCustomerID)
+func ensureOrderOwner(order *domain_order.Order, actor auth.Actor) error {
+	customerID, err := domain_order.NewCustomerID(int64(actor.ID()))
+	if err != nil {
+		return err
+	}
+	if customerID != order.CustomerID() {
+		return domain_order.ErrOrderAccessDenied
+	}
+	return nil
+}
+
+func (u *UseCase) CreateOrder(ctx context.Context, actor auth.Actor) (domain_order.OrderID, error) {
+	customerID, err := domain_order.NewCustomerID(int64(actor.ID()))
 	if err != nil {
 		return 0, err
 	}
@@ -31,7 +43,7 @@ func (u *UseCase) CreateOrder(ctx context.Context, rawCustomerID int64) (domain_
 	return orderID, nil
 }
 
-func (u *UseCase) AddItem(ctx context.Context, rawOrderID int64, rawProductID int64, rawQuantity int64) error {
+func (u *UseCase) AddItem(ctx context.Context, rawOrderID int64, rawProductID int64, rawQuantity int64, actor auth.Actor) error {
 	orderID, err := domain_order.NewOrderID(rawOrderID)
 	if err != nil {
 		return err
@@ -44,15 +56,18 @@ func (u *UseCase) AddItem(ctx context.Context, rawOrderID int64, rawProductID in
 	if err != nil {
 		return err
 	}
+	order, err := u.repo.Get(ctx, orderID)
+	if err != nil {
+		return err
+	}
+	if err = ensureOrderOwner(order, actor); err != nil {
+		return err
+	}
 	err = u.productService.EnsureAvailable(ctx, int64(productID), int64(quantity))
 	if err != nil {
 		return err
 	}
 	snapshot, err := u.productService.GetSnapshot(ctx, int64(productID))
-	if err != nil {
-		return err
-	}
-	order, err := u.repo.Get(ctx, orderID)
 	if err != nil {
 		return err
 	}
@@ -75,7 +90,7 @@ func (u *UseCase) AddItem(ctx context.Context, rawOrderID int64, rawProductID in
 	return nil
 }
 
-func (u *UseCase) RemoveItem(ctx context.Context, rawOrderID int64, rawItemID int64) error {
+func (u *UseCase) RemoveItem(ctx context.Context, rawOrderID int64, rawItemID int64, actor auth.Actor) error {
 	orderID, err := domain_order.NewOrderID(rawOrderID)
 	if err != nil {
 		return err
@@ -86,6 +101,9 @@ func (u *UseCase) RemoveItem(ctx context.Context, rawOrderID int64, rawItemID in
 	}
 	order, err := u.repo.Get(ctx, orderID)
 	if err != nil {
+		return err
+	}
+	if err = ensureOrderOwner(order, actor); err != nil {
 		return err
 	}
 	err = order.RemoveItem(itemID)
@@ -100,13 +118,16 @@ func (u *UseCase) RemoveItem(ctx context.Context, rawOrderID int64, rawItemID in
 	return nil
 }
 
-func (u *UseCase) PayOrder(ctx context.Context, rawOrderID int64) error {
+func (u *UseCase) PayOrder(ctx context.Context, rawOrderID int64, actor auth.Actor) error {
 	orderID, err := domain_order.NewOrderID(rawOrderID)
 	if err != nil {
 		return err
 	}
 	order, err := u.repo.Get(ctx, orderID)
 	if err != nil {
+		return err
+	}
+	if err = ensureOrderOwner(order, actor); err != nil {
 		return err
 	}
 	err = order.Pay()
@@ -120,13 +141,16 @@ func (u *UseCase) PayOrder(ctx context.Context, rawOrderID int64) error {
 	return nil
 }
 
-func (u *UseCase) ShipOrder(ctx context.Context, rawOrderID int64) error {
+func (u *UseCase) ShipOrder(ctx context.Context, rawOrderID int64, actor auth.Actor) error {
 	orderID, err := domain_order.NewOrderID(rawOrderID)
 	if err != nil {
 		return err
 	}
 	order, err := u.repo.Get(ctx, orderID)
 	if err != nil {
+		return err
+	}
+	if err = ensureOrderOwner(order, actor); err != nil {
 		return err
 	}
 	err = order.Ship()
@@ -140,13 +164,16 @@ func (u *UseCase) ShipOrder(ctx context.Context, rawOrderID int64) error {
 	return nil
 }
 
-func (u *UseCase) CancelOrder(ctx context.Context, rawOrderID int64) error {
+func (u *UseCase) CancelOrder(ctx context.Context, rawOrderID int64, actor auth.Actor) error {
 	orderID, err := domain_order.NewOrderID(rawOrderID)
 	if err != nil {
 		return err
 	}
 	order, err := u.repo.Get(ctx, orderID)
 	if err != nil {
+		return err
+	}
+	if err = ensureOrderOwner(order, actor); err != nil {
 		return err
 	}
 	err = order.Cancel()
@@ -160,7 +187,7 @@ func (u *UseCase) CancelOrder(ctx context.Context, rawOrderID int64) error {
 	return nil
 }
 
-func (u *UseCase) GetOrder(ctx context.Context, rawOrderID int64) (OrderDTO, error) {
+func (u *UseCase) GetOrder(ctx context.Context, rawOrderID int64, actor auth.Actor) (OrderDTO, error) {
 	orderID, err := domain_order.NewOrderID(rawOrderID)
 	if err != nil {
 		return OrderDTO{}, err
@@ -169,12 +196,19 @@ func (u *UseCase) GetOrder(ctx context.Context, rawOrderID int64) (OrderDTO, err
 	if err != nil {
 		return OrderDTO{}, err
 	}
+	if err = ensureOrderOwner(order, actor); err != nil {
+		return OrderDTO{}, err
+	}
 	orderDTO := ToOrderDTO(order)
 	return orderDTO, nil
 }
 
-func (u *UseCase) GetOrders(ctx context.Context, paramsDTO OrderListParamsDTO) ([]OrderDTO, error) {
-	params, err := domain_order.NewOrderListParams(paramsDTO.Cursor, paramsDTO.Limit)
+func (u *UseCase) GetOrders(ctx context.Context, paramsDTO OrderListParamsDTO, actor auth.Actor) ([]OrderDTO, error) {
+	customerID, err := domain_order.NewCustomerID(int64(actor.ID()))
+	if err != nil {
+		return nil, err
+	}
+	params, err := domain_order.NewOrderListParams(customerID, paramsDTO.Cursor, paramsDTO.Limit)
 	if err != nil {
 		return nil, err
 	}

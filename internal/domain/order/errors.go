@@ -26,4 +26,6 @@ var (
 
 	ErrInvalidOrderLimit  = errors.New("invalid order limit")
 	ErrInvalidOrderCursor = errors.New("invalid order cursor")
+
+	ErrOrderAccessDenied = errors.New("order access denied")
 )

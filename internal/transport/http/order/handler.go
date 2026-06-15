@@ -105,7 +105,7 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orderID, err := h.usecase.CreateOrder(ctx, int64(actor.ID()))
+	orderID, err := h.usecase.CreateOrder(ctx, actor)
 	if err != nil {
 		h.writeError(w, r, err, mapError(err))
 		return
@@ -131,7 +131,12 @@ func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ctx := r.Context()
-	order, err := h.usecase.GetOrder(ctx, reqOrderID)
+	actor, ok := middleware.ActorFromContext(ctx)
+	if !ok {
+		h.writeError(w, r, errors.New("unauthorized"), http.StatusUnauthorized)
+		return
+	}
+	order, err := h.usecase.GetOrder(ctx, reqOrderID, actor)
 	if err != nil {
 		h.writeError(w, r, err, mapError(err))
 		return
@@ -172,7 +177,12 @@ func (h *OrderHandler) GetOrders(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	orders, err := h.usecase.GetOrders(ctx, paramsDTO)
+	actor, ok := middleware.ActorFromContext(ctx)
+	if !ok {
+		h.writeError(w, r, errors.New("unauthorized"), http.StatusUnauthorized)
+		return
+	}
+	orders, err := h.usecase.GetOrders(ctx, paramsDTO, actor)
 	if err != nil {
 		h.writeError(w, r, err, mapError(err))
 		return
@@ -215,7 +225,12 @@ func (h *OrderHandler) AddItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ctx := r.Context()
-	err = h.usecase.AddItem(ctx, reqOrderID, *req.ProductID, *req.Quantity)
+	actor, ok := middleware.ActorFromContext(ctx)
+	if !ok {
+		h.writeError(w, r, errors.New("unauthorized"), http.StatusUnauthorized)
+		return
+	}
+	err = h.usecase.AddItem(ctx, reqOrderID, *req.ProductID, *req.Quantity, actor)
 	if err != nil {
 		h.writeError(w, r, err, mapError(err))
 		return
@@ -239,7 +254,12 @@ func (h *OrderHandler) DeleteItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ctx := r.Context()
-	err = h.usecase.RemoveItem(ctx, reqOrderID, reqOrderItemID)
+	actor, ok := middleware.ActorFromContext(ctx)
+	if !ok {
+		h.writeError(w, r, errors.New("unauthorized"), http.StatusUnauthorized)
+		return
+	}
+	err = h.usecase.RemoveItem(ctx, reqOrderID, reqOrderItemID, actor)
 	if err != nil {
 		h.writeError(w, r, err, mapError(err))
 		return
@@ -256,7 +276,12 @@ func (h *OrderHandler) PayOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ctx := r.Context()
-	err = h.usecase.PayOrder(ctx, reqOrderID)
+	actor, ok := middleware.ActorFromContext(ctx)
+	if !ok {
+		h.writeError(w, r, errors.New("unauthorized"), http.StatusUnauthorized)
+		return
+	}
+	err = h.usecase.PayOrder(ctx, reqOrderID, actor)
 	if err != nil {
 		h.writeError(w, r, err, mapError(err))
 		return
@@ -273,7 +298,12 @@ func (h *OrderHandler) ShipOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ctx := r.Context()
-	err = h.usecase.ShipOrder(ctx, reqOrderID)
+	actor, ok := middleware.ActorFromContext(ctx)
+	if !ok {
+		h.writeError(w, r, errors.New("unauthorized"), http.StatusUnauthorized)
+		return
+	}
+	err = h.usecase.ShipOrder(ctx, reqOrderID, actor)
 	if err != nil {
 		h.writeError(w, r, err, mapError(err))
 		return
@@ -290,7 +320,12 @@ func (h *OrderHandler) CancelOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ctx := r.Context()
-	err = h.usecase.CancelOrder(ctx, reqOrderID)
+	actor, ok := middleware.ActorFromContext(ctx)
+	if !ok {
+		h.writeError(w, r, errors.New("unauthorized"), http.StatusUnauthorized)
+		return
+	}
+	err = h.usecase.CancelOrder(ctx, reqOrderID, actor)
 	if err != nil {
 		h.writeError(w, r, err, mapError(err))
 		return
