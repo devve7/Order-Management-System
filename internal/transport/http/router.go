@@ -2,6 +2,7 @@
 package http
 
 import (
+	"Order-Management-System/internal/domain/user"
 	"Order-Management-System/internal/transport/http/auth"
 	health "Order-Management-System/internal/transport/http/health"
 	"Order-Management-System/internal/transport/http/middleware"
@@ -21,54 +22,52 @@ func NewRouter(
 	authMiddleware *middleware.AuthMiddleware,
 	logger *logrus.Logger,
 ) http.Handler {
+	requireAuth := func(h http.HandlerFunc) http.Handler {
+		return authMiddleware.RequireAuth(http.HandlerFunc(h))
+	}
+	requireAdmin := func(h http.HandlerFunc) http.Handler {
+		return authMiddleware.RequireAuth(
+			middleware.RequireRoleMiddleware(user.RoleAdmin, http.HandlerFunc(h)),
+		)
+	}
+
 	router := mux.NewRouter()
 
 	router.Use(middleware.LoggingMiddleWare(logger))
 
+	// Health
 	router.HandleFunc("/health", healthHandler.Health).Methods(http.MethodGet)
 
-	router.Handle("/orders", authMiddleware.RequireAuth(http.HandlerFunc(orderHandler.CreateOrder))).
-		Methods(http.MethodPost)
+	//Orders
+	router.Handle("/orders", requireAuth(orderHandler.CreateOrder)).Methods(http.MethodPost)
 
-	router.Handle("/orders/{id:[0-9]+}", authMiddleware.RequireAuth(http.HandlerFunc(orderHandler.GetOrder))).
-		Methods(http.MethodGet)
+	router.Handle("/orders/{id:[0-9]+}", requireAuth(orderHandler.GetOrder)).Methods(http.MethodGet)
+	router.Handle("/orders", requireAuth(orderHandler.GetOrders)).Methods(http.MethodGet)
 
-	router.Handle("/orders", authMiddleware.RequireAuth(http.HandlerFunc(orderHandler.GetOrders))).
-		Methods(http.MethodGet)
+	router.Handle("/orders/{id:[0-9]+}/items", requireAuth(orderHandler.AddItem)).Methods(http.MethodPost)
+	router.Handle("/orders/{id:[0-9]+}/items/{item_id:[0-9]+}", requireAuth(orderHandler.DeleteItem)).Methods(http.MethodDelete)
+	router.Handle("/orders/{id:[0-9]+}/pay", requireAuth(orderHandler.PayOrder)).Methods(http.MethodPost)
+	router.Handle("/orders/{id:[0-9]+}/cancel", requireAuth(orderHandler.CancelOrder)).Methods(http.MethodPost)
+	router.Handle("/orders/{id:[0-9]+}/ship", requireAdmin(orderHandler.ShipOrder)).Methods(http.MethodPost)
 
-	router.Handle("/orders", authMiddleware.RequireAuth(http.HandlerFunc(orderHandler.CreateOrder))).
-		Methods(http.MethodPost)
+	// Products
+	router.Handle("/products", requireAdmin(productHandler.CreateProduct)).Methods(http.MethodPost)
 
-	router.Handle("/orders/{id:[0-9]+}/items", authMiddleware.RequireAuth(http.HandlerFunc(orderHandler.AddItem))).
-		Methods(http.MethodPost)
-
-	router.Handle("/orders/{id:[0-9]+}/items/{item_id:[0-9]+}", authMiddleware.RequireAuth(http.HandlerFunc(orderHandler.DeleteItem))).
-		Methods(http.MethodDelete)
-
-	router.Handle("/orders/{id:[0-9]+}/pay", authMiddleware.RequireAuth(http.HandlerFunc(orderHandler.PayOrder))).
-		Methods(http.MethodPost)
-
-	router.Handle("/orders/{id:[0-9]+}/ship", authMiddleware.RequireAuth(http.HandlerFunc(orderHandler.ShipOrder))).
-		Methods(http.MethodPost)
-
-	router.Handle("/orders/{id:[0-9]+}/cancel", authMiddleware.RequireAuth(http.HandlerFunc(orderHandler.CancelOrder))).
-		Methods(http.MethodPost)
-
-	router.HandleFunc("/products", productHandler.CreateProduct).Methods(http.MethodPost)
 	router.HandleFunc("/products/{id:[0-9]+}", productHandler.GetProduct).Methods(http.MethodGet)
 	router.HandleFunc("/products", productHandler.GetProducts).Methods(http.MethodGet)
 
-	router.HandleFunc("/products/{id:[0-9]+}/price", productHandler.ChangePrice).Methods(http.MethodPost)
-	router.HandleFunc("/products/{id:[0-9]+}/activate", productHandler.ActivateProduct).Methods(http.MethodPost)
-	router.HandleFunc("/products/{id:[0-9]+}/deactivate", productHandler.DeactivateProduct).Methods(http.MethodPost)
-	router.HandleFunc("/products/{id:[0-9]+}/stock/add", productHandler.AddStock).Methods(http.MethodPost)
-	router.HandleFunc("/products/{id:[0-9]+}/stock/remove", productHandler.RemoveStock).Methods(http.MethodPost)
+	router.Handle("/products/{id:[0-9]+}/price", requireAdmin(productHandler.ChangePrice)).Methods(http.MethodPost)
+	router.Handle("/products/{id:[0-9]+}/activate", requireAdmin(productHandler.ActivateProduct)).Methods(http.MethodPost)
+	router.Handle("/products/{id:[0-9]+}/deactivate", requireAdmin(productHandler.DeactivateProduct)).Methods(http.MethodPost)
+	router.Handle("/products/{id:[0-9]+}/stock/add", requireAdmin(productHandler.AddStock)).Methods(http.MethodPost)
+	router.Handle("/products/{id:[0-9]+}/stock/remove", requireAdmin(productHandler.RemoveStock)).Methods(http.MethodPost)
 
+	// Auth
 	router.HandleFunc("/auth/register", authHandler.Register).Methods(http.MethodPost)
 	router.HandleFunc("/auth/login", authHandler.Login).Methods(http.MethodPost)
 
-	router.Handle("/me", authMiddleware.RequireAuth(http.HandlerFunc(authHandler.Me))).
-		Methods(http.MethodGet)
+	// Me
+	router.Handle("/me", requireAuth(authHandler.Me)).Methods(http.MethodGet)
 
 	return router
 }
