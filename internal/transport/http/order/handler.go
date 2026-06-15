@@ -60,6 +60,8 @@ func mapError(err error) int {
 		errors.Is(err, domain_product.ErrProductAlreadyActive):
 		return http.StatusConflict
 
+	case errors.Is(err, domain_order.ErrOrderAccessDenied):
+		return http.StatusForbidden
 	default:
 		return http.StatusInternalServerError
 	}
