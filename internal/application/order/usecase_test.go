@@ -1,8 +1,10 @@
 package order
 
 import (
+	"Order-Management-System/internal/application/auth"
 	"Order-Management-System/internal/application/ports"
 	domain_order "Order-Management-System/internal/domain/order"
+	"Order-Management-System/internal/domain/user"
 	"context"
 	"errors"
 	"testing"
@@ -12,7 +14,7 @@ import (
 type repoMock struct {
 	createFn func(ctx context.Context, customerID domain_order.CustomerID) (domain_order.OrderID, error)
 	getFn    func(ctx context.Context, orderID domain_order.OrderID) (*domain_order.Order, error)
-	getAllFn func(ctx context.Context) ([]*domain_order.Order, error)
+	listFn   func(ctx context.Context, params domain_order.OrderListParams) ([]*domain_order.Order, error)
 	updateFn func(ctx context.Context, order *domain_order.Order) error
 }
 
@@ -31,8 +33,8 @@ func (m *repoMock) Get(ctx context.Context, orderID domain_order.OrderID) (*doma
 }
 
 func (m *repoMock) List(ctx context.Context, params domain_order.OrderListParams) ([]*domain_order.Order, error) {
-	if m.getAllFn != nil {
-		return m.getAllFn(ctx)
+	if m.listFn != nil {
+		return m.listFn(ctx, params)
 	}
 	return nil, nil
 }
@@ -44,9 +46,16 @@ func (m *repoMock) Update(ctx context.Context, order *domain_order.Order) error 
 	return nil
 }
 
-// Здесь оставляем пустой стаб, потому что для большинства тестов productService не нужен.
-// Для AddItem нужен точный интерфейс ports.ProductForOrder, а его сигнатура не загружена.
-type productServiceStub struct{}
+func testActor(t *testing.T, id int64) auth.Actor {
+	t.Helper()
+
+	userID, err := user.NewUserID(id)
+	if err != nil {
+		t.Fatalf("user.NewUserID(%d) error = %v", id, err)
+	}
+
+	return auth.NewActor(userID, user.RoleUser)
+}
 
 func mustOrderID(t *testing.T, id int64) domain_order.OrderID {
 	t.Helper()
@@ -164,7 +173,7 @@ func TestCreateOrder(t *testing.T) {
 
 		u := NewUseCase(nil, repo)
 
-		got, err := u.CreateOrder(context.Background(), 42)
+		got, err := u.CreateOrder(context.Background(), testActor(t, 42))
 		if err != nil {
 			t.Fatalf("CreateOrder() error = %v", err)
 		}
@@ -173,26 +182,6 @@ func TestCreateOrder(t *testing.T) {
 		}
 		if got != 100 {
 			t.Fatalf("CreateOrder() = %v, want %v", got, domain_order.OrderID(100))
-		}
-	})
-
-	t.Run("invalid customer id", func(t *testing.T) {
-		repoCalled := false
-		repo := &repoMock{
-			createFn: func(ctx context.Context, customerID domain_order.CustomerID) (domain_order.OrderID, error) {
-				repoCalled = true
-				return 0, nil
-			},
-		}
-
-		u := NewUseCase(nil, repo)
-
-		_, err := u.CreateOrder(context.Background(), -1)
-		if err != domain_order.ErrInvalidID {
-			t.Fatalf("CreateOrder() error = %v, want %v", err, domain_order.ErrInvalidID)
-		}
-		if repoCalled {
-			t.Fatal("repo.Create should not be called")
 		}
 	})
 
@@ -206,7 +195,7 @@ func TestCreateOrder(t *testing.T) {
 
 		u := NewUseCase(nil, repo)
 
-		_, err := u.CreateOrder(context.Background(), 1)
+		_, err := u.CreateOrder(context.Background(), testActor(t, 1))
 		if err != wantErr {
 			t.Fatalf("CreateOrder() error = %v, want %v", err, wantErr)
 		}
@@ -240,7 +229,7 @@ func TestRemoveItem(t *testing.T) {
 
 		u := NewUseCase(nil, repo)
 
-		err := u.RemoveItem(context.Background(), 1, 1)
+		err := u.RemoveItem(context.Background(), 1, 1, testActor(t, 10))
 		if err != nil {
 			t.Fatalf("RemoveItem() error = %v", err)
 		}
@@ -256,7 +245,7 @@ func TestRemoveItem(t *testing.T) {
 		repo := &repoMock{}
 		u := NewUseCase(nil, repo)
 
-		err := u.RemoveItem(context.Background(), -1, 1)
+		err := u.RemoveItem(context.Background(), -1, 1, testActor(t, 10))
 		if err != domain_order.ErrInvalidID {
 			t.Fatalf("RemoveItem() error = %v, want %v", err, domain_order.ErrInvalidID)
 		}
@@ -266,7 +255,7 @@ func TestRemoveItem(t *testing.T) {
 		repo := &repoMock{}
 		u := NewUseCase(nil, repo)
 
-		err := u.RemoveItem(context.Background(), 1, -1)
+		err := u.RemoveItem(context.Background(), 1, -1, testActor(t, 10))
 		if err != domain_order.ErrInvalidID {
 			t.Fatalf("RemoveItem() error = %v, want %v", err, domain_order.ErrInvalidID)
 		}
@@ -281,7 +270,7 @@ func TestRemoveItem(t *testing.T) {
 		}
 		u := NewUseCase(nil, repo)
 
-		err := u.RemoveItem(context.Background(), 1, 1)
+		err := u.RemoveItem(context.Background(), 1, 1, testActor(t, 10))
 		if err != wantErr {
 			t.Fatalf("RemoveItem() error = %v, want %v", err, wantErr)
 		}
@@ -297,7 +286,7 @@ func TestRemoveItem(t *testing.T) {
 		}
 		u := NewUseCase(nil, repo)
 
-		err := u.RemoveItem(context.Background(), 1, 1)
+		err := u.RemoveItem(context.Background(), 1, 1, testActor(t, 10))
 		if err != domain_order.ErrOrderItemNotFound {
 			t.Fatalf("RemoveItem() error = %v, want %v", err, domain_order.ErrOrderItemNotFound)
 		}
@@ -318,7 +307,7 @@ func TestRemoveItem(t *testing.T) {
 		}
 		u := NewUseCase(nil, repo)
 
-		err := u.RemoveItem(context.Background(), 1, 1)
+		err := u.RemoveItem(context.Background(), 1, 1, testActor(t, 10))
 		if err != wantErr {
 			t.Fatalf("RemoveItem() error = %v, want %v", err, wantErr)
 		}
@@ -346,7 +335,7 @@ func TestPayOrder(t *testing.T) {
 
 		u := NewUseCase(nil, repo)
 
-		err := u.PayOrder(context.Background(), 1)
+		err := u.PayOrder(context.Background(), 1, testActor(t, 10))
 		if err != nil {
 			t.Fatalf("PayOrder() error = %v", err)
 		}
@@ -358,7 +347,7 @@ func TestPayOrder(t *testing.T) {
 	t.Run("invalid order id", func(t *testing.T) {
 		u := NewUseCase(nil, &repoMock{})
 
-		err := u.PayOrder(context.Background(), -1)
+		err := u.PayOrder(context.Background(), -1, testActor(t, 10))
 		if err != domain_order.ErrInvalidID {
 			t.Fatalf("PayOrder() error = %v, want %v", err, domain_order.ErrInvalidID)
 		}
@@ -373,7 +362,7 @@ func TestPayOrder(t *testing.T) {
 		}
 		u := NewUseCase(nil, repo)
 
-		err := u.PayOrder(context.Background(), 1)
+		err := u.PayOrder(context.Background(), 1, testActor(t, 10))
 		if err != wantErr {
 			t.Fatalf("PayOrder() error = %v, want %v", err, wantErr)
 		}
@@ -389,7 +378,7 @@ func TestPayOrder(t *testing.T) {
 		}
 		u := NewUseCase(nil, repo)
 
-		err := u.PayOrder(context.Background(), 1)
+		err := u.PayOrder(context.Background(), 1, testActor(t, 10))
 		if err != domain_order.ErrOrderEmpty {
 			t.Fatalf("PayOrder() error = %v, want %v", err, domain_order.ErrOrderEmpty)
 		}
@@ -410,7 +399,7 @@ func TestPayOrder(t *testing.T) {
 		}
 		u := NewUseCase(nil, repo)
 
-		err := u.PayOrder(context.Background(), 1)
+		err := u.PayOrder(context.Background(), 1, testActor(t, 10))
 		if err != wantErr {
 			t.Fatalf("PayOrder() error = %v, want %v", err, wantErr)
 		}
@@ -442,7 +431,7 @@ func TestShipOrder(t *testing.T) {
 
 		u := NewUseCase(nil, repo)
 
-		err := u.ShipOrder(context.Background(), 1)
+		err := u.ShipOrder(context.Background(), 1, testActor(t, 10))
 		if err != nil {
 			t.Fatalf("ShipOrder() error = %v", err)
 		}
@@ -454,7 +443,7 @@ func TestShipOrder(t *testing.T) {
 	t.Run("invalid order id", func(t *testing.T) {
 		u := NewUseCase(nil, &repoMock{})
 
-		err := u.ShipOrder(context.Background(), -1)
+		err := u.ShipOrder(context.Background(), -1, testActor(t, 10))
 		if err != domain_order.ErrInvalidID {
 			t.Fatalf("ShipOrder() error = %v, want %v", err, domain_order.ErrInvalidID)
 		}
@@ -469,7 +458,7 @@ func TestShipOrder(t *testing.T) {
 		}
 		u := NewUseCase(nil, repo)
 
-		err := u.ShipOrder(context.Background(), 1)
+		err := u.ShipOrder(context.Background(), 1, testActor(t, 10))
 		if err != wantErr {
 			t.Fatalf("ShipOrder() error = %v, want %v", err, wantErr)
 		}
@@ -485,7 +474,7 @@ func TestShipOrder(t *testing.T) {
 		}
 		u := NewUseCase(nil, repo)
 
-		err := u.ShipOrder(context.Background(), 1)
+		err := u.ShipOrder(context.Background(), 1, testActor(t, 10))
 		if err != domain_order.ErrCannotShip {
 			t.Fatalf("ShipOrder() error = %v, want %v", err, domain_order.ErrCannotShip)
 		}
@@ -510,7 +499,7 @@ func TestShipOrder(t *testing.T) {
 		}
 		u := NewUseCase(nil, repo)
 
-		err := u.ShipOrder(context.Background(), 1)
+		err := u.ShipOrder(context.Background(), 1, testActor(t, 10))
 		if err != wantErr {
 			t.Fatalf("ShipOrder() error = %v, want %v", err, wantErr)
 		}
@@ -537,7 +526,7 @@ func TestCancelOrder(t *testing.T) {
 
 		u := NewUseCase(nil, repo)
 
-		err := u.CancelOrder(context.Background(), 1)
+		err := u.CancelOrder(context.Background(), 1, testActor(t, 10))
 		if err != nil {
 			t.Fatalf("CancelOrder() error = %v", err)
 		}
@@ -549,7 +538,7 @@ func TestCancelOrder(t *testing.T) {
 	t.Run("invalid order id", func(t *testing.T) {
 		u := NewUseCase(nil, &repoMock{})
 
-		err := u.CancelOrder(context.Background(), -1)
+		err := u.CancelOrder(context.Background(), -1, testActor(t, 10))
 		if err != domain_order.ErrInvalidID {
 			t.Fatalf("CancelOrder() error = %v, want %v", err, domain_order.ErrInvalidID)
 		}
@@ -564,7 +553,7 @@ func TestCancelOrder(t *testing.T) {
 		}
 		u := NewUseCase(nil, repo)
 
-		err := u.CancelOrder(context.Background(), 1)
+		err := u.CancelOrder(context.Background(), 1, testActor(t, 10))
 		if err != wantErr {
 			t.Fatalf("CancelOrder() error = %v, want %v", err, wantErr)
 		}
@@ -585,7 +574,7 @@ func TestCancelOrder(t *testing.T) {
 		}
 		u := NewUseCase(nil, repo)
 
-		err := u.CancelOrder(context.Background(), 1)
+		err := u.CancelOrder(context.Background(), 1, testActor(t, 10))
 		if err != domain_order.ErrCannotCancel {
 			t.Fatalf("CancelOrder() error = %v, want %v", err, domain_order.ErrCannotCancel)
 		}
@@ -605,7 +594,7 @@ func TestCancelOrder(t *testing.T) {
 		}
 		u := NewUseCase(nil, repo)
 
-		err := u.CancelOrder(context.Background(), 1)
+		err := u.CancelOrder(context.Background(), 1, testActor(t, 10))
 		if err != wantErr {
 			t.Fatalf("CancelOrder() error = %v, want %v", err, wantErr)
 		}
@@ -624,7 +613,7 @@ func TestGetOrder(t *testing.T) {
 		}
 		u := NewUseCase(nil, repo)
 
-		got, err := u.GetOrder(context.Background(), 1)
+		got, err := u.GetOrder(context.Background(), 1, testActor(t, 10))
 		if err != nil {
 			t.Fatalf("GetOrder() error = %v", err)
 		}
@@ -649,7 +638,7 @@ func TestGetOrder(t *testing.T) {
 	t.Run("invalid order id", func(t *testing.T) {
 		u := NewUseCase(nil, &repoMock{})
 
-		_, err := u.GetOrder(context.Background(), -1)
+		_, err := u.GetOrder(context.Background(), -1, testActor(t, 10))
 		if err != domain_order.ErrInvalidID {
 			t.Fatalf("GetOrder() error = %v, want %v", err, domain_order.ErrInvalidID)
 		}
@@ -664,7 +653,7 @@ func TestGetOrder(t *testing.T) {
 		}
 		u := NewUseCase(nil, repo)
 
-		_, err := u.GetOrder(context.Background(), 1)
+		_, err := u.GetOrder(context.Background(), 1, testActor(t, 10))
 		if err != wantErr {
 			t.Fatalf("GetOrder() error = %v, want %v", err, wantErr)
 		}
@@ -756,7 +745,7 @@ func TestAddItem(t *testing.T) {
 
 		u := NewUseCase(productService, repo)
 
-		err := u.AddItem(context.Background(), 1, 100, 2)
+		err := u.AddItem(context.Background(), 1, 100, 2, testActor(t, 10))
 		if err != nil {
 			t.Fatalf("AddItem() error = %v", err)
 		}
@@ -785,7 +774,7 @@ func TestAddItem(t *testing.T) {
 
 		u := NewUseCase(productService, &repoMock{})
 
-		err := u.AddItem(context.Background(), -1, 100, 2)
+		err := u.AddItem(context.Background(), -1, 100, 2, testActor(t, 10))
 		if err != domain_order.ErrInvalidID {
 			t.Fatalf("AddItem() error = %v, want %v", err, domain_order.ErrInvalidID)
 		}
@@ -805,7 +794,7 @@ func TestAddItem(t *testing.T) {
 
 		u := NewUseCase(productService, &repoMock{})
 
-		err := u.AddItem(context.Background(), 1, -1, 2)
+		err := u.AddItem(context.Background(), 1, -1, 2, testActor(t, 10))
 		if err != domain_order.ErrInvalidID {
 			t.Fatalf("AddItem() error = %v, want %v", err, domain_order.ErrInvalidID)
 		}
@@ -825,7 +814,7 @@ func TestAddItem(t *testing.T) {
 
 		u := NewUseCase(productService, &repoMock{})
 
-		err := u.AddItem(context.Background(), 1, 100, 0)
+		err := u.AddItem(context.Background(), 1, 100, 0, testActor(t, 10))
 		if err != domain_order.ErrInvalidQuantity {
 			t.Fatalf("AddItem() error = %v, want %v", err, domain_order.ErrInvalidQuantity)
 		}
@@ -847,9 +836,15 @@ func TestAddItem(t *testing.T) {
 			},
 		}
 
-		u := NewUseCase(productService, &repoMock{})
+		repo := &repoMock{
+			getFn: func(ctx context.Context, orderID domain_order.OrderID) (*domain_order.Order, error) {
+				return newTestOrder(t), nil
+			},
+		}
 
-		err := u.AddItem(context.Background(), 1, 100, 2)
+		u := NewUseCase(productService, repo)
+
+		err := u.AddItem(context.Background(), 1, 100, 2, testActor(t, 10))
 		if err != wantErr {
 			t.Fatalf("AddItem() error = %v, want %v", err, wantErr)
 		}
@@ -867,9 +862,15 @@ func TestAddItem(t *testing.T) {
 			},
 		}
 
-		u := NewUseCase(productService, &repoMock{})
+		repo := &repoMock{
+			getFn: func(ctx context.Context, orderID domain_order.OrderID) (*domain_order.Order, error) {
+				return newTestOrder(t), nil
+			},
+		}
 
-		err := u.AddItem(context.Background(), 1, 100, 2)
+		u := NewUseCase(productService, repo)
+
+		err := u.AddItem(context.Background(), 1, 100, 2, testActor(t, 10))
 		if err != wantErr {
 			t.Fatalf("AddItem() error = %v, want %v", err, wantErr)
 		}
@@ -899,7 +900,7 @@ func TestAddItem(t *testing.T) {
 
 		u := NewUseCase(productService, repo)
 
-		err := u.AddItem(context.Background(), 1, 100, 2)
+		err := u.AddItem(context.Background(), 1, 100, 2, testActor(t, 10))
 		if err != wantErr {
 			t.Fatalf("AddItem() error = %v, want %v", err, wantErr)
 		}
@@ -927,7 +928,7 @@ func TestAddItem(t *testing.T) {
 
 		u := NewUseCase(productService, repo)
 
-		err := u.AddItem(context.Background(), 1, 100, 2)
+		err := u.AddItem(context.Background(), 1, 100, 2, testActor(t, 10))
 		if err != domain_order.ErrInvalidProductName {
 			t.Fatalf("AddItem() error = %v, want %v", err, domain_order.ErrInvalidProductName)
 		}
@@ -955,7 +956,7 @@ func TestAddItem(t *testing.T) {
 
 		u := NewUseCase(productService, repo)
 
-		err := u.AddItem(context.Background(), 1, 100, 2)
+		err := u.AddItem(context.Background(), 1, 100, 2, testActor(t, 10))
 		if err != domain_order.ErrInvalidPrice {
 			t.Fatalf("AddItem() error = %v, want %v", err, domain_order.ErrInvalidPrice)
 		}
@@ -994,7 +995,7 @@ func TestAddItem(t *testing.T) {
 
 		u := NewUseCase(productService, repo)
 
-		err := u.AddItem(context.Background(), 1, 100, 2)
+		err := u.AddItem(context.Background(), 1, 100, 2, testActor(t, 10))
 		if err != domain_order.ErrOrderPaid {
 			t.Fatalf("AddItem() error = %v, want %v", err, domain_order.ErrOrderPaid)
 		}
@@ -1028,7 +1029,7 @@ func TestAddItem(t *testing.T) {
 
 		u := NewUseCase(productService, repo)
 
-		err := u.AddItem(context.Background(), 1, 100, 2)
+		err := u.AddItem(context.Background(), 1, 100, 2, testActor(t, 10))
 		if err != wantErr {
 			t.Fatalf("AddItem() error = %v, want %v", err, wantErr)
 		}
