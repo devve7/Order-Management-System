@@ -73,6 +73,8 @@ func NewOrderVersion(v int64) (OrderVersion, error) {
 }
 
 type OrderListParams struct {
+	customerID CustomerID
+
 	cursor    OrderID
 	hasCursor bool
 
@@ -82,7 +84,7 @@ type OrderListParams struct {
 const defaultOrderLimit int64 = 20
 const maxOrderLimit int64 = 100
 
-func NewOrderListParams(cursor *int64, limit *int64) (OrderListParams, error) {
+func NewOrderListParams(customerID CustomerID, cursor *int64, limit *int64) (OrderListParams, error) {
 	hasCursor := false
 	var cursorValue OrderID = 0
 	if cursor != nil {
@@ -95,9 +97,10 @@ func NewOrderListParams(cursor *int64, limit *int64) (OrderListParams, error) {
 	}
 	if limit == nil {
 		return OrderListParams{
-			cursor:    cursorValue,
-			hasCursor: hasCursor,
-			limit:     defaultOrderLimit,
+			customerID: customerID,
+			cursor:     cursorValue,
+			hasCursor:  hasCursor,
+			limit:      defaultOrderLimit,
 		}, nil
 	}
 	if *limit <= 0 {
@@ -105,26 +108,32 @@ func NewOrderListParams(cursor *int64, limit *int64) (OrderListParams, error) {
 	}
 	if *limit > maxOrderLimit {
 		return OrderListParams{
-			cursor:    cursorValue,
-			hasCursor: hasCursor,
-			limit:     maxOrderLimit,
+			customerID: customerID,
+			cursor:     cursorValue,
+			hasCursor:  hasCursor,
+			limit:      maxOrderLimit,
 		}, nil
 	}
 	return OrderListParams{
-		cursor:    cursorValue,
-		hasCursor: hasCursor,
-		limit:     *limit,
+		customerID: customerID,
+		cursor:     cursorValue,
+		hasCursor:  hasCursor,
+		limit:      *limit,
 	}, nil
 }
 
-func (p *OrderListParams) GetCursor() OrderID {
+func (p *OrderListParams) Cursor() OrderID {
 	return p.cursor
 }
 
-func (p *OrderListParams) GetLimit() int64 {
+func (p *OrderListParams) Limit() int64 {
 	return p.limit
 }
 
 func (p *OrderListParams) HasCursor() bool {
 	return p.hasCursor
+}
+
+func (p *OrderListParams) CustomerID() CustomerID {
+	return p.customerID
 }

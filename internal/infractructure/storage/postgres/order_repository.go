@@ -229,12 +229,12 @@ func (r *PostgresOrderRepository) List(ctx context.Context, params domain_order.
 		query := `
 		SELECT id, customer_id, status, created_at, next_item_id, version
 		FROM orders
-		WHERE id > $1
+		WHERE customer_id = $1 AND id > $2
 		ORDER BY id
-		LIMIT $2
+		LIMIT $3
 	`
 
-		rows, err = r.pool.Query(ctx, query, params.GetCursor(), params.GetLimit())
+		rows, err = r.pool.Query(ctx, query, params.CustomerID(), params.Cursor(), params.Limit())
 		if err != nil {
 			return nil, fmt.Errorf("get orders: %w", err)
 		}
@@ -242,11 +242,12 @@ func (r *PostgresOrderRepository) List(ctx context.Context, params domain_order.
 		query := `
 		SELECT id, customer_id, status, created_at, next_item_id, version
 		FROM orders
+		WHERE customer_id = $1
 		ORDER BY id
-		LIMIT $1
+		LIMIT $2
 	`
 
-		rows, err = r.pool.Query(ctx, query, params.GetLimit())
+		rows, err = r.pool.Query(ctx, query, params.CustomerID(), params.Limit())
 		if err != nil {
 			return nil, fmt.Errorf("get orders: %w", err)
 		}

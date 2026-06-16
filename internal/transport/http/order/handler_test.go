@@ -1,10 +1,13 @@
 package order
 
 import (
+	"Order-Management-System/internal/application/auth"
 	application_order "Order-Management-System/internal/application/order"
 	"Order-Management-System/internal/application/ports"
 	domain_order "Order-Management-System/internal/domain/order"
 	domain_product "Order-Management-System/internal/domain/product"
+	"Order-Management-System/internal/domain/user"
+	"Order-Management-System/internal/transport/http/middleware"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -21,7 +24,7 @@ import (
 type orderRepoMock struct {
 	createFn func(ctx context.Context, customerID domain_order.CustomerID) (domain_order.OrderID, error)
 	getFn    func(ctx context.Context, orderID domain_order.OrderID) (*domain_order.Order, error)
-	getAllFn func(ctx context.Context) ([]*domain_order.Order, error)
+	listFn   func(ctx context.Context, params domain_order.OrderListParams) ([]*domain_order.Order, error)
 	updateFn func(ctx context.Context, order *domain_order.Order) error
 }
 
@@ -40,8 +43,8 @@ func (m *orderRepoMock) Get(ctx context.Context, orderID domain_order.OrderID) (
 }
 
 func (m *orderRepoMock) List(ctx context.Context, params domain_order.OrderListParams) ([]*domain_order.Order, error) {
-	if m.getAllFn != nil {
-		return m.getAllFn(ctx)
+	if m.listFn != nil {
+		return m.listFn(ctx, params)
 	}
 	return nil, nil
 }
@@ -77,6 +80,26 @@ func newOrderHandler(productService ports.ProductForOrder, repo domain_order.Rep
 	logger := logrus.New()
 	logger.SetOutput(bytes.NewBuffer(nil))
 	return NewOrderHandler(usecase, logger)
+}
+
+func testActor(t *testing.T, id int64) auth.Actor {
+	t.Helper()
+
+	userID, err := user.NewUserID(id)
+	if err != nil {
+		t.Fatalf("user.NewUserID(%d) error = %v", id, err)
+	}
+
+	return auth.NewActor(userID, user.RoleUser)
+}
+
+func withActor(t *testing.T, req *http.Request, id int64) *http.Request {
+	t.Helper()
+
+	actor := testActor(t, id)
+	ctx := middleware.WithActor(req.Context(), actor)
+
+	return req.WithContext(ctx)
 }
 
 func mustOrderID(t *testing.T, id int64) domain_order.OrderID {
@@ -160,8 +183,8 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		repo := &orderRepoMock{
 			createFn: func(ctx context.Context, customerID domain_order.CustomerID) (domain_order.OrderID, error) {
-				if customerID != 42 {
-					t.Fatalf("customerID = %v, want %v", customerID, domain_order.CustomerID(42))
+				if customerID != 10 {
+					t.Fatalf("customerID = %v, want %v", customerID, domain_order.CustomerID(10))
 				}
 				return 100, nil
 			},
@@ -169,8 +192,10 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 
 		h := newOrderHandler(&productServiceMock{}, repo)
 
-		req := httptest.NewRequest(http.MethodPost, "/orders", bytes.NewBufferString(`{"customer_id":42}`))
+		req := httptest.NewRequest(http.MethodPost, "/orders", nil)
 		w := httptest.NewRecorder()
+
+		req = withActor(t, req, 10)
 
 		h.CreateOrder(w, req)
 
@@ -190,40 +215,6 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 		}
 	})
 
-	t.Run("invalid json", func(t *testing.T) {
-		h := newOrderHandler(&productServiceMock{}, &orderRepoMock{})
-
-		req := httptest.NewRequest(http.MethodPost, "/orders", bytes.NewBufferString(`{"customer_id":`))
-		w := httptest.NewRecorder()
-
-		h.CreateOrder(w, req)
-
-		if w.Code != http.StatusBadRequest {
-			t.Fatalf("status = %d, want %d", w.Code, http.StatusBadRequest)
-		}
-	})
-
-	t.Run("missing customer id", func(t *testing.T) {
-		h := newOrderHandler(&productServiceMock{}, &orderRepoMock{})
-
-		req := httptest.NewRequest(http.MethodPost, "/orders", bytes.NewBufferString(`{}`))
-		w := httptest.NewRecorder()
-
-		h.CreateOrder(w, req)
-
-		if w.Code != http.StatusBadRequest {
-			t.Fatalf("status = %d, want %d", w.Code, http.StatusBadRequest)
-		}
-
-		var got ErrorResponse
-		if err := json.NewDecoder(w.Body).Decode(&got); err != nil {
-			t.Fatalf("decode error response: %v", err)
-		}
-		if got.Error != "customer_id is required" {
-			t.Fatalf("error = %q, want %q", got.Error, "customer_id is required")
-		}
-	})
-
 	t.Run("unexpected repo error becomes 500", func(t *testing.T) {
 		repo := &orderRepoMock{
 			createFn: func(ctx context.Context, customerID domain_order.CustomerID) (domain_order.OrderID, error) {
@@ -232,8 +223,10 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 		}
 		h := newOrderHandler(&productServiceMock{}, repo)
 
-		req := httptest.NewRequest(http.MethodPost, "/orders", bytes.NewBufferString(`{"customer_id":42}`))
+		req := httptest.NewRequest(http.MethodPost, "/orders", nil)
 		w := httptest.NewRecorder()
+
+		req = withActor(t, req, 10)
 
 		h.CreateOrder(w, req)
 
@@ -271,6 +264,8 @@ func TestOrderHandler_GetOrder(t *testing.T) {
 		req = mux.SetURLVars(req, map[string]string{"id": "1"})
 		w := httptest.NewRecorder()
 
+		req = withActor(t, req, 10)
+
 		h.GetOrder(w, req)
 
 		if w.Code != http.StatusOK {
@@ -306,6 +301,8 @@ func TestOrderHandler_GetOrder(t *testing.T) {
 		req = mux.SetURLVars(req, map[string]string{"id": "abc"})
 		w := httptest.NewRecorder()
 
+		req = withActor(t, req, 10)
+
 		h.GetOrder(w, req)
 
 		if w.Code != http.StatusBadRequest {
@@ -324,6 +321,8 @@ func TestOrderHandler_GetOrder(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/orders/1", nil)
 		req = mux.SetURLVars(req, map[string]string{"id": "1"})
 		w := httptest.NewRecorder()
+
+		req = withActor(t, req, 10)
 
 		h.GetOrder(w, req)
 
@@ -346,7 +345,7 @@ func TestOrderHandler_GetOrders(t *testing.T) {
 		)
 
 		repo := &orderRepoMock{
-			getAllFn: func(ctx context.Context) ([]*domain_order.Order, error) {
+			listFn: func(ctx context.Context, params domain_order.OrderListParams) ([]*domain_order.Order, error) {
 				return []*domain_order.Order{order1, order2}, nil
 			},
 		}
@@ -355,6 +354,8 @@ func TestOrderHandler_GetOrders(t *testing.T) {
 
 		req := httptest.NewRequest(http.MethodGet, "/orders", nil)
 		w := httptest.NewRecorder()
+
+		req = withActor(t, req, 10)
 
 		h.GetOrders(w, req)
 
@@ -376,7 +377,7 @@ func TestOrderHandler_GetOrders(t *testing.T) {
 
 	t.Run("repo error", func(t *testing.T) {
 		repo := &orderRepoMock{
-			getAllFn: func(ctx context.Context) ([]*domain_order.Order, error) {
+			listFn: func(ctx context.Context, params domain_order.OrderListParams) ([]*domain_order.Order, error) {
 				return nil, errors.New("db failed")
 			},
 		}
@@ -385,6 +386,8 @@ func TestOrderHandler_GetOrders(t *testing.T) {
 
 		req := httptest.NewRequest(http.MethodGet, "/orders", nil)
 		w := httptest.NewRecorder()
+
+		req = withActor(t, req, 10)
 
 		h.GetOrders(w, req)
 
@@ -435,6 +438,8 @@ func TestOrderHandler_AddItem(t *testing.T) {
 		req = mux.SetURLVars(req, map[string]string{"id": "1"})
 		w := httptest.NewRecorder()
 
+		req = withActor(t, req, 10)
+
 		h.AddItem(w, req)
 
 		if w.Code != http.StatusNoContent {
@@ -448,6 +453,8 @@ func TestOrderHandler_AddItem(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/orders/1/items", bytes.NewBufferString(`{"product_id":`))
 		req = mux.SetURLVars(req, map[string]string{"id": "1"})
 		w := httptest.NewRecorder()
+
+		req = withActor(t, req, 10)
 
 		h.AddItem(w, req)
 
@@ -463,6 +470,8 @@ func TestOrderHandler_AddItem(t *testing.T) {
 		req = mux.SetURLVars(req, map[string]string{"id": "1"})
 		w := httptest.NewRecorder()
 
+		req = withActor(t, req, 10)
+
 		h.AddItem(w, req)
 
 		if w.Code != http.StatusBadRequest {
@@ -476,6 +485,8 @@ func TestOrderHandler_AddItem(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/orders/1/items", bytes.NewBufferString(`{"product_id":100}`))
 		req = mux.SetURLVars(req, map[string]string{"id": "1"})
 		w := httptest.NewRecorder()
+
+		req = withActor(t, req, 10)
 
 		h.AddItem(w, req)
 
@@ -491,6 +502,8 @@ func TestOrderHandler_AddItem(t *testing.T) {
 		req = mux.SetURLVars(req, map[string]string{"id": "abc"})
 		w := httptest.NewRecorder()
 
+		req = withActor(t, req, 10)
+
 		h.AddItem(w, req)
 
 		if w.Code != http.StatusBadRequest {
@@ -499,16 +512,25 @@ func TestOrderHandler_AddItem(t *testing.T) {
 	})
 
 	t.Run("conflict from product service", func(t *testing.T) {
+		order := newTestOrder(t)
+
 		productService := &productServiceMock{
 			ensureAvailableFn: func(ctx context.Context, productID int64, quantity int64) error {
 				return domain_product.ErrInsufficientStock
 			},
 		}
-		h := newOrderHandler(productService, &orderRepoMock{})
+		repo := &orderRepoMock{
+			getFn: func(ctx context.Context, orderID domain_order.OrderID) (*domain_order.Order, error) {
+				return order, nil
+			},
+		}
+		h := newOrderHandler(productService, repo)
 
 		req := httptest.NewRequest(http.MethodPost, "/orders/1/items", bytes.NewBufferString(`{"product_id":100,"quantity":2}`))
 		req = mux.SetURLVars(req, map[string]string{"id": "1"})
 		w := httptest.NewRecorder()
+
+		req = withActor(t, req, 10)
 
 		h.AddItem(w, req)
 
@@ -550,6 +572,8 @@ func TestOrderHandler_AddItem(t *testing.T) {
 		req = mux.SetURLVars(req, map[string]string{"id": "1"})
 		w := httptest.NewRecorder()
 
+		req = withActor(t, req, 10)
+
 		h.AddItem(w, req)
 
 		if w.Code != http.StatusConflict {
@@ -581,6 +605,8 @@ func TestOrderHandler_DeleteItem(t *testing.T) {
 		req = mux.SetURLVars(req, map[string]string{"id": "1", "item_id": "1"})
 		w := httptest.NewRecorder()
 
+		req = withActor(t, req, 10)
+
 		h.DeleteItem(w, req)
 
 		if w.Code != http.StatusNoContent {
@@ -595,6 +621,8 @@ func TestOrderHandler_DeleteItem(t *testing.T) {
 		req = mux.SetURLVars(req, map[string]string{"id": "abc", "item_id": "1"})
 		w := httptest.NewRecorder()
 
+		req = withActor(t, req, 10)
+
 		h.DeleteItem(w, req)
 
 		if w.Code != http.StatusBadRequest {
@@ -608,6 +636,8 @@ func TestOrderHandler_DeleteItem(t *testing.T) {
 		req := httptest.NewRequest(http.MethodDelete, "/orders/1/items/abc", nil)
 		req = mux.SetURLVars(req, map[string]string{"id": "1", "item_id": "abc"})
 		w := httptest.NewRecorder()
+
+		req = withActor(t, req, 10)
 
 		h.DeleteItem(w, req)
 
@@ -630,6 +660,8 @@ func TestOrderHandler_DeleteItem(t *testing.T) {
 		req := httptest.NewRequest(http.MethodDelete, "/orders/1/items/1", nil)
 		req = mux.SetURLVars(req, map[string]string{"id": "1", "item_id": "1"})
 		w := httptest.NewRecorder()
+
+		req = withActor(t, req, 10)
 
 		h.DeleteItem(w, req)
 
@@ -662,6 +694,8 @@ func TestOrderHandler_PayOrder(t *testing.T) {
 		req = mux.SetURLVars(req, map[string]string{"id": "1"})
 		w := httptest.NewRecorder()
 
+		req = withActor(t, req, 10)
+
 		h.PayOrder(w, req)
 
 		if w.Code != http.StatusOK {
@@ -675,6 +709,8 @@ func TestOrderHandler_PayOrder(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/orders/abc/pay", nil)
 		req = mux.SetURLVars(req, map[string]string{"id": "abc"})
 		w := httptest.NewRecorder()
+
+		req = withActor(t, req, 10)
 
 		h.PayOrder(w, req)
 
@@ -697,6 +733,8 @@ func TestOrderHandler_PayOrder(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/orders/1/pay", nil)
 		req = mux.SetURLVars(req, map[string]string{"id": "1"})
 		w := httptest.NewRecorder()
+
+		req = withActor(t, req, 10)
 
 		h.PayOrder(w, req)
 
@@ -733,6 +771,8 @@ func TestOrderHandler_ShipOrder(t *testing.T) {
 		req = mux.SetURLVars(req, map[string]string{"id": "1"})
 		w := httptest.NewRecorder()
 
+		req = withActor(t, req, 10)
+
 		h.ShipOrder(w, req)
 
 		if w.Code != http.StatusOK {
@@ -746,6 +786,8 @@ func TestOrderHandler_ShipOrder(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/orders/abc/ship", nil)
 		req = mux.SetURLVars(req, map[string]string{"id": "abc"})
 		w := httptest.NewRecorder()
+
+		req = withActor(t, req, 10)
 
 		h.ShipOrder(w, req)
 
@@ -768,6 +810,8 @@ func TestOrderHandler_ShipOrder(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/orders/1/ship", nil)
 		req = mux.SetURLVars(req, map[string]string{"id": "1"})
 		w := httptest.NewRecorder()
+
+		req = withActor(t, req, 10)
 
 		h.ShipOrder(w, req)
 
@@ -799,6 +843,8 @@ func TestOrderHandler_CancelOrder(t *testing.T) {
 		req = mux.SetURLVars(req, map[string]string{"id": "1"})
 		w := httptest.NewRecorder()
 
+		req = withActor(t, req, 10)
+
 		h.CancelOrder(w, req)
 
 		if w.Code != http.StatusOK {
@@ -812,6 +858,8 @@ func TestOrderHandler_CancelOrder(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/orders/abc/cancel", nil)
 		req = mux.SetURLVars(req, map[string]string{"id": "abc"})
 		w := httptest.NewRecorder()
+
+		req = withActor(t, req, 10)
 
 		h.CancelOrder(w, req)
 
@@ -839,6 +887,8 @@ func TestOrderHandler_CancelOrder(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/orders/1/cancel", nil)
 		req = mux.SetURLVars(req, map[string]string{"id": "1"})
 		w := httptest.NewRecorder()
+
+		req = withActor(t, req, 10)
 
 		h.CancelOrder(w, req)
 

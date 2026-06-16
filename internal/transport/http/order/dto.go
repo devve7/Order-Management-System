@@ -48,10 +48,6 @@ func ToOrderDTO(orderDTO *application_order.OrderDTO) OrderDTO {
 	}
 }
 
-type CustomerIDDTO struct {
-	CustomerID *int64 `json:"customer_id"`
-}
-
 type OrderIDDTO struct {
 	OrderID int64 `json:"order_id"`
 }
